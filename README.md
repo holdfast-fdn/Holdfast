@@ -38,7 +38,8 @@ holdfast/
 │   ├── resolver.py           # PURE-FUNCTION contest math — the spec, TESTED
 │   └── world_sim.py          # multi-tick world simulation
 ├── brand/                    # v2 "The Herald" identity
-│   ├── holdfast-logo.jpg     # master logo — the Winged Anchor (pixel emblem)
+│   ├── holdfast-logo.png     # master logo — the Winged Anchor (pixel emblem, alpha)
+│   ├── holdfast-logo.jpg     # on-night render of the master logo
 │   ├── holdfast-brand.html   # brand system sheet
 │   ├── holdfast-mark.svg     # vector glyph for small sizes
 │   ├── holdfast-wordmark.svg
