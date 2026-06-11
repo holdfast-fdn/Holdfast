@@ -1,18 +1,18 @@
 """
 Holdfast — Balance lab (Workstream A / Phase 1).
 
-Menjalankan world_sim berkali-kali (N seed per set parameter) dan mengukur:
-  - upset rate     : seberapa sering pihak ber-peluang <50% menang
-  - Gini holdings  : ketimpangan kepemilikan tile di akhir run
-  - arah ekonomi   : net supply per tick (emisi - burn); negatif = deflationary
-  - hegemoni       : apakah satu pemain mengunci >=50% tile di akhir run
-  - aktivitas      : contest/tick (deteksi ekuilibrium degeneratif, mis. semua-turtle)
-  - cursed tiles   : tile yang diserang berkali-kali tapi tak pernah jatuh
+Runs world_sim many times (N seeds per parameter set) and measures:
+  - upset rate     : how often the side with <50% win probability wins
+  - holdings Gini  : inequality of tile ownership at the end of a run
+  - economy        : net supply per tick (emission - burn); negative = deflationary
+  - hegemony       : whether one player locks >=50% of tiles by the end
+  - activity       : contests/tick (detects degenerate equilibria, e.g. all-turtle)
+  - cursed tiles   : tiles attacked repeatedly that never fall
 
-Semua run deterministik: seed integer -> rng AI + seed_prefix VRF.
+Every run is deterministic: integer seed -> AI rng + VRF seed prefix.
 
-Jalankan: python3 balance_lab.py [sweep|archetypes|decay|whale|all]
-Output mesin untuk docs/BALANCE.md.
+Run: python3 balance_lab.py [sweep|archetypes|decay|tune|counter|whale|all]
+Machine output for docs/BALANCE.md.
 """
 
 from __future__ import annotations
@@ -24,22 +24,22 @@ from resolver import Tile
 from world_sim import SimParams, Player, World, NATURE, run_tick
 
 TILE_IDS = [f"tile_0{i}" for i in range(1, 10)]
-HOME_SLOTS = [0, 3, 5, 7]          # posisi tile awal pemain (pola demo Phase 0)
+HOME_SLOTS = [0, 3, 5, 7]          # players' starting tiles (Phase-0 demo layout)
 DEFAULT_TICKS = 30
 DEFAULT_SEEDS = 20
 
-# Roster baku: campuran arketipe, saldo setara
+# Standard roster: mixed archetypes, equal balances
 MIXED_ROSTER = [
-    ("ragnar", "raider", 0.8, 1.0),
-    ("rurik",  "raider", 0.6, 1.0),
-    ("olga",   "opportunist", 0.7, 1.0),
-    ("tora",   "turtle", 0.4, 1.0),
+    ("alice", "raider", 0.8, 1.0),
+    ("bob",   "raider", 0.6, 1.0),
+    ("carol", "opportunist", 0.7, 1.0),
+    ("dave",  "turtle", 0.4, 1.0),
 ]
 
 
 def build_lab_world(params: SimParams, roster) -> World:
-    """Roster: list (nama, arketipe, aggression, kelipatan saldo awal)."""
-    assert len(roster) <= len(HOME_SLOTS), "maksimal 4 pemain di peta 9 tile"
+    """Roster: list of (name, archetype, aggression, starting-balance multiple)."""
+    assert len(roster) <= len(HOME_SLOTS), "at most 4 players on a 9-tile map"
     players = {
         name: Player(name, params.starting_balance * mult, is_ai=True,
                      aggression=aggr, archetype=arch)
@@ -56,7 +56,7 @@ def build_lab_world(params: SimParams, roster) -> World:
 
 
 # ---------------------------------------------------------------------------
-# Metrik
+# Metrics
 # ---------------------------------------------------------------------------
 def gini(values) -> float:
     xs = sorted(values)
@@ -71,13 +71,13 @@ def gini(values) -> float:
 class RunStats:
     contests: int = 0
     upsets: int = 0
-    flips: int = 0                 # tile berpindah tangan
+    flips: int = 0                 # tiles changing hands
     gini_final: float = 0.0
-    net_per_tick: float = 0.0      # (emisi - burn)/tick; negatif = deflationary
-    hegemon: bool = False          # >=50% tile dikunci sepanjang 5 tick terakhir
-    late_contests_per_tick: float = 0.0   # aktivitas sepertiga akhir run
-    cursed_tiles: int = 0          # >=4 serangan gagal, 0 kali jatuh
-    top_share: float = 0.0         # porsi tile pemain teratas di akhir
+    net_per_tick: float = 0.0      # (emission - burn)/tick; negative = deflationary
+    hegemon: bool = False          # >=50% of tiles locked through the last 5 ticks
+    late_contests_per_tick: float = 0.0   # activity over the final third of the run
+    cursed_tiles: int = 0          # >=4 failed attacks, zero ownership changes
+    top_share: float = 0.0         # top player's share of tiles at the end
     top_player: str = ""
 
     @property
@@ -179,16 +179,16 @@ def run_set(label: str, params: SimParams, roster,
 
 def run_sweep(param_sets, roster=None, n_seeds: int = DEFAULT_SEEDS,
               n_ticks: int = DEFAULT_TICKS):
-    """param_sets: list (label, SimParams). Mengembalikan list SetReport."""
+    """param_sets: list of (label, SimParams). Returns a list of SetReport."""
     roster = roster or MIXED_ROSTER
     return [run_set(label, p, roster, n_seeds, n_ticks) for label, p in param_sets]
 
 
 # ---------------------------------------------------------------------------
-# Pelaporan
+# Reporting
 # ---------------------------------------------------------------------------
 HEADER = (f"{'set':<22} | {'upset':>6} | {'gini':>5} | {'net/tick':>8} | "
-          f"{'hegemoni':>8} | {'flips':>5} | {'akhir c/t':>9} | {'cursed':>6}")
+          f"{'hegemony':>8} | {'flips':>5} | {'late c/t':>9} | {'cursed':>6}")
 
 
 def print_reports(title: str, reports):
@@ -205,44 +205,45 @@ def print_reports(title: str, reports):
 
 
 # ---------------------------------------------------------------------------
-# Skenario CLI
+# CLI scenarios
 # ---------------------------------------------------------------------------
 def scenario_sweep():
     sets = []
     for a in (0.5, 0.7, 1.0):
         for d in (1.15, 1.3, 1.5):
             sets.append((f"a={a} d={d}", SimParams(alpha=a, delta=d)))
-    print_reports("Sweep α × δ (roster campuran, 20 seed × 30 tick)",
+    print_reports("α × δ sweep (mixed roster, 20 seeds × 30 ticks)",
                   run_sweep(sets))
-    print("Target: upset sehat (~15–35%), hegemoni rendah, net/tick negatif,")
-    print("aktivitas akhir > 0 (dunia tidak mati).")
+    print("Targets: healthy upsets (~15-35%), low hegemony, negative net/tick,")
+    print("late activity > 0 (the world must not die).")
 
 
 def scenario_archetypes():
     rosters = {
-        "semua-turtle": [(f"t{i}", "turtle", 0.4, 1.0) for i in range(4)],
-        "semua-raider": [(f"r{i}", "raider", 0.7, 1.0) for i in range(4)],
-        "semua-opportunist": [(f"o{i}", "opportunist", 0.7, 1.0) for i in range(4)],
-        "campuran": MIXED_ROSTER,
+        "all-turtle": [(f"t{i}", "turtle", 0.4, 1.0) for i in range(4)],
+        "all-raider": [(f"r{i}", "raider", 0.7, 1.0) for i in range(4)],
+        "all-opportunist": [(f"o{i}", "opportunist", 0.7, 1.0) for i in range(4)],
+        "mixed": MIXED_ROSTER,
     }
     reports = [run_set(name, SimParams(), roster)
                for name, roster in rosters.items()]
-    print_reports("Matriks arketipe (parameter default)", reports)
-    print("Cek degenerasi: dunia semua-turtle dengan aktivitas-akhir ~0 = stagnan;")
-    print("itu bukan bug resolver tapi sinyal perlunya insentif menyerang.")
+    print_reports("Archetype matrix (default parameters)", reports)
+    print("Degeneracy check: an all-turtle world with late activity ~0 is stagnant;")
+    print("that is not a resolver bug but a signal that attacking needs incentives.")
 
 
 def scenario_decay():
     sets = [(f"decay={dc}", SimParams(garrison_decay=dc))
             for dc in (0.0, 0.03, 0.08)]
-    print_reports("Garrison decay — efek pada 'cursed tile' & stalemate",
+    print_reports("Garrison decay — effect on 'cursed tiles' & stalemates",
                   run_sweep(sets))
-    print("Decay > 0 mengikis benteng yang tidak dirawat -> stalemate pecah,")
-    print("tapi terlalu besar membuat bertahan sia-sia (cek hegemoni & flips).")
+    print("Decay > 0 erodes untended fortifications -> stalemates break,")
+    print("but too much makes defending pointless (watch hegemony & flips).")
 
 
 def scenario_tune():
-    """Sweep tahap dua: knob ekonomi, menarget hegemoni & inflasi dari sweep α×δ."""
+    """Second-stage sweep: economy knobs, targeting the hegemony & inflation
+    seen in the α×δ sweep."""
     sets = []
     for a, d in ((0.5, 1.15), (0.5, 1.3), (0.7, 1.15)):
         for y in (6.0, 12.0):
@@ -253,8 +254,8 @@ def scenario_tune():
                     sets.append((label, SimParams(
                         alpha=a, delta=d, yield_per_tile=y,
                         beta=beta, gamma=gamma, garrison_decay=dc)))
-    print_reports("Tuning ekonomi (yield × β/γ × decay)", run_sweep(sets))
-    print("Cari: net/tick <= 0, hegemoni minimal, flips & aktivitas tetap hidup.")
+    print_reports("Economy tuning (yield × β/γ × decay)", run_sweep(sets))
+    print("Looking for: net/tick <= 0, minimal hegemony, flips & activity alive.")
 
 
 REC_PARAMS = SimParams(alpha=0.5, delta=1.3, yield_per_tile=6.0,
@@ -262,54 +263,54 @@ REC_PARAMS = SimParams(alpha=0.5, delta=1.3, yield_per_tile=6.0,
 
 
 def scenario_counter():
-    """Uji hipotesis: hegemoni tinggi karena bot tak mengeroyok pemimpin.
-    Balancer = raider yang menargetkan pemuncak begitu ia >=40% tile."""
+    """Hypothesis test: hegemony is high because bots never gang up on the
+    leader. Balancer = a raider that targets the leader once it holds >=40%."""
     rosters = {
-        "campuran (baseline)": MIXED_ROSTER,
-        "2 balancer": [
-            ("bjorn", "balancer", 0.7, 1.0),
-            ("brida", "balancer", 0.6, 1.0),
-            ("olga",  "opportunist", 0.7, 1.0),
-            ("ragnar", "raider", 0.8, 1.0),
+        "mixed (baseline)": MIXED_ROSTER,
+        "2 balancers": [
+            ("alice", "balancer", 0.7, 1.0),
+            ("bob",   "balancer", 0.6, 1.0),
+            ("carol", "opportunist", 0.7, 1.0),
+            ("dave",  "raider", 0.8, 1.0),
         ],
-        "semua-balancer": [(f"b{i}", "balancer", 0.7, 1.0) for i in range(4)],
-        "whale vs 3 balancer": [
+        "all-balancer": [(f"b{i}", "balancer", 0.7, 1.0) for i in range(4)],
+        "whale vs 3 balancers": [
             ("whale", "raider", 0.7, 10.0),
-            ("bjorn", "balancer", 0.7, 1.0),
-            ("brida", "balancer", 0.6, 1.0),
-            ("bodil", "balancer", 0.7, 1.0),
+            ("alice", "balancer", 0.7, 1.0),
+            ("bob",   "balancer", 0.6, 1.0),
+            ("carol", "balancer", 0.7, 1.0),
         ],
     }
     reports = [run_set(name, REC_PARAMS, roster)
                for name, roster in rosters.items()]
-    print_reports("Anti-hegemoni — balancer mengeroyok pemuncak "
-                  f"(set rekomendasi: a={REC_PARAMS.alpha} d={REC_PARAMS.delta} "
+    print_reports("Anti-hegemony — balancers gang up on the leader "
+                  f"(recommended set: a={REC_PARAMS.alpha} d={REC_PARAMS.delta} "
                   f"y={REC_PARAMS.yield_per_tile:.0f} b={REC_PARAMS.beta} "
                   f"g={REC_PARAMS.gamma})", reports)
     for rep in reports:
         if any(r.top_player == "whale" for r in rep.runs):
             whale_top = sum(1 for r in rep.runs
                             if r.top_player == "whale") / len(rep.runs)
-            print(f"  {rep.label}: whale pemilik terbanyak di {whale_top:.0%} run")
+            print(f"  {rep.label}: whale is top holder in {whale_top:.0%} of runs")
 
 
 def scenario_whale():
     whale_roster = [
         ("whale", "raider", 0.7, 10.0),
-        ("rurik", "raider", 0.6, 1.0),
-        ("olga",  "opportunist", 0.7, 1.0),
-        ("tora",  "turtle", 0.4, 1.0),
+        ("alice", "raider", 0.6, 1.0),
+        ("bob",   "opportunist", 0.7, 1.0),
+        ("carol", "turtle", 0.4, 1.0),
     ]
     reports = []
     for a in (0.5, 0.7, 1.0):
         rep = run_set(f"whale10x a={a}", SimParams(alpha=a), whale_roster)
         reports.append(rep)
-    print_reports("Whale test — satu pemain modal 10×", reports)
+    print_reports("Whale test — one player with 10× capital", reports)
     for rep in reports:
         whale_top = sum(1 for r in rep.runs if r.top_player == "whale") / len(rep.runs)
-        print(f"  {rep.label}: whale jadi pemilik terbanyak di {whale_top:.0%} run, "
-              f"rata-rata porsi pemuncak {rep.top_share:.1%}")
-    print("Lulus jika di α rendah whale unggul tapi TIDAK mengunci hegemoni.")
+        print(f"  {rep.label}: whale is top holder in {whale_top:.0%} of runs, "
+              f"average top share {rep.top_share:.1%}")
+    print("Passes if at low α the whale leads but does NOT lock in hegemony.")
 
 
 SCENARIOS = {
@@ -325,7 +326,7 @@ if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     print("=" * 72)
     print("HOLDFAST — BALANCE LAB (Workstream A)")
-    print(f"{DEFAULT_SEEDS} seed/set × {DEFAULT_TICKS} tick · 9 tile · 4 bot")
+    print(f"{DEFAULT_SEEDS} seeds/set × {DEFAULT_TICKS} ticks · 9 tiles · 4 bots")
     print("=" * 72)
     if which == "all":
         for fn in SCENARIOS.values():
@@ -333,5 +334,5 @@ if __name__ == "__main__":
     elif which in SCENARIOS:
         SCENARIOS[which]()
     else:
-        print(f"skenario tak dikenal: {which} (pilihan: "
+        print(f"unknown scenario: {which} (choices: "
               f"{', '.join(SCENARIOS)}, all)")

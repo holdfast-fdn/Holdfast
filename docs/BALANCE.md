@@ -15,7 +15,7 @@ python3 balance_lab.py all     # or: sweep | archetypes | decay | tune | counter
 | Param | Value | Phase-0 value | Why it changed |
 |---|---|---|---|
 | α (diminishing returns) | **0.5** | 0.5 | unchanged — keeps ganging-up on a leader effective (see counter test) |
-| δ (defender advantage) | **1.3** | 1.3 | unchanged — best holistic profile at α=0.5; principle "taking costs more than holding" intact |
+| δ (defender advantage) | **1.3** | 1.3 | unchanged — "taking costs more than holding" principle intact; mid-band is fine |
 | γ (spoils ratio) | **0.3** | 0.5 | smaller spoils = less snowball fuel for winners, bigger burn |
 | β (defend reward) | **0.3** | 0.5 | smaller reward = leaders fed less by failed attacks against them, bigger burn |
 | yield/tile/tick | **6.0** | 12.0 | at 12 the economy inflates whenever activity dips; at 6 it stays deflationary |
@@ -25,9 +25,10 @@ python3 balance_lab.py all     # or: sweep | archetypes | decay | tune | counter
 | starting balance | 250.0 | 250.0 | unchanged |
 
 Headline metrics of the recommended set (mixed-archetype roster):
-**upset rate 36.5% · holdings Gini 0.50 · net supply −11.2 Flux/tick
-(deflationary) · runaway-hegemony 60% (drops to 45% with anti-leader play —
-see below) · world stays active through the final ticks (1.1 contests/tick).**
+**upset rate 35.7% · holdings Gini 0.61 · net supply −18.8 Flux/tick
+(deflationary) · world stays active through the final ticks (1.0
+contests/tick) · runaway-hegemony 80% with passive bots, dropping to 50%
+with anti-leader play (see §6 and the noise caveat below).**
 
 ## Metric definitions
 
@@ -39,27 +40,40 @@ see below) · world stays active through the final ticks (1.1 contests/tick).**
 - **late activity** — contests/tick over the final third (0 ≈ dead world).
 - **cursed tiles** — ≥4 failed attacks and zero ownership changes in a run.
 
+### Noise caveat (read before quoting hegemony numbers)
+
+Hegemony rates are **high-variance at 20 seeds**: changing nothing but the
+VRF stream (e.g. renaming players, which alters contest hashes) moves
+individual cells by ±20pp. Robust findings across streams: the **economy
+direction** (yield 6 + β/γ 0.3 is always deflationary, yield 12 always
+inflationary), the **all-turtle degeneracy**, the **decay verdict**, and the
+**balancer effect** (anti-leader play always cuts hegemony and whale
+dominance sharply). Treat any single hegemony percentage as ±20pp.
+
 ## Evidence
 
 ### 1. α × δ sweep (default economy: yield 12, γ=β=0.5)
 
-Every cell was inflationary (+19 to +34 Flux/tick) and hegemony ran 55–80%.
+Every cell was inflationary (+16 to +28 Flux/tick) and hegemony ran 55–80%.
 Conclusion: α and δ alone cannot fix the economy or the snowball — the
-economy knobs (yield, γ, β) had to move. α=0.5 keeps upsets highest
-(40–44%) without hurting anything else; δ=1.3 is comfortably mid-band.
+economy knobs (yield, γ, β) had to move. α=0.5 keeps upsets at the top of
+the healthy band (33.7–41.2% vs 31.5–34.7% at α=1.0); δ=1.3 sits
+comfortably mid-band.
 
 ### 2. Economy tuning (yield × β/γ × decay, 24 sets)
 
 | set (a=0.5 d=1.3) | upset | gini | net/tick | hegemony | late c/t |
 |---|---|---|---|---|---|
-| y12 β/γ=0.5 | 40.4% | 0.59 | **+23.7 INF** | 75% | 1.28 |
-| y12 β/γ=0.3 | 41.9% | 0.60 | +9.0 INF | 80% | 1.18 |
-| y6 β/γ=0.5 | 38.3% | 0.59 | −1.0 DEF | 70% | 0.92 |
-| **y6 β/γ=0.3 (recommended)** | **36.5%** | **0.50** | **−11.2 DEF** | **60%** | **1.11** |
+| y12 β/γ=0.5 | 37.5% | 0.60 | **+20.8 INF** | 80% | 1.18 |
+| y12 β/γ=0.3 | 37.7% | 0.57 | −0.2 DEF | 65% | 1.55 |
+| y6 β/γ=0.5 | 38.7% | 0.60 | −6.2 DEF | 75% | 1.01 |
+| **y6 β/γ=0.3 (recommended)** | **35.7%** | **0.61** | **−18.8 DEF** | **80%** | **1.02** |
 
-Yield 6 + β/γ 0.3 is the only family that is robustly deflationary while the
-world stays active. This directly enforces the "sink ≥ emission" rule from
-CLAUDE.md without yet relying on the GM-compute fee.
+Yield 6 + β/γ 0.3 is the only family that is robustly deflationary (−12 to
+−19 across all α/δ cells tested) while the world stays active. This directly
+enforces the "sink ≥ emission" rule from CLAUDE.md without yet relying on
+the GM-compute fee. Hegemony within this family ranged 30–80% across cells —
+see the noise caveat; §6 shows behavior, not parameters, is what moves it.
 
 ### 3. Archetype matrix (degenerate-equilibrium check)
 
@@ -68,7 +82,7 @@ CLAUDE.md without yet relying on the GM-compute fee.
 | all-turtle | 0.01 | **+80.1 INF** | 0% | **0.03 (dead)** |
 | all-raider | 0.51 | −9.5 DEF | 50% | 2.64 |
 | all-opportunist | 0.29 | +52.5 INF | 35% | 0.06 (dies out) |
-| mixed | 0.59 | +23.7 INF | 75% | 1.28 |
+| mixed | 0.60 | +20.8 INF | 80% | 1.18 |
 
 **The all-turtle world is the confirmed degenerate equilibrium**: nobody
 attacks, emission runs unopposed, the token inflates ~80 Flux/tick. Passive
@@ -81,25 +95,25 @@ yield (6) limits the damage.
 
 | decay | upset | net/tick | hegemony | flips | cursed |
 |---|---|---|---|---|---|
-| 0.00 | 40.4% | +23.7 | 75% | 20.8 | 0.2 |
-| 0.03 | 43.9% | +35.5 | 80% | 21.7 | 0.2 |
-| 0.08 | 44.5% | +36.6 | **95%** | 25.0 | 0.0 |
+| 0.00 | 37.5% | +20.8 | 80% | 20.4 | 0.1 |
+| 0.03 | 37.9% | +23.9 | 75% | 21.8 | 0.1 |
+| 0.08 | 45.1% | +41.7 | **100%** | 22.5 | 0.1 |
 
 The Phase-0 "cursed tile" (failed attacks harden a tile into a permanent
 stalemate) **does not reproduce as a systemic problem** over 30-tick runs —
-cursed tiles average 0.0–0.3 per run even with decay off. Decay meanwhile
-*worsens* hegemony (eroded defenses help the strongest attacker most) and
-inflates the economy (less garrison burned per conquest). Decision: ship MVP
-with `garrison_decay = 0`; revisit only if real players manufacture
-stalemates. Recorded in `docs/MEMORY.md`.
+cursed tiles average 0.0–0.6 per run even with decay off. Decay meanwhile
+*worsens* hegemony at the aggressive end (eroded defenses help the strongest
+attacker most) and inflates the economy (less garrison burned per conquest).
+Decision: ship MVP with `garrison_decay = 0`; revisit only if real players
+manufacture stalemates. Recorded in `docs/MEMORY.md`.
 
 ### 5. Whale test (one 10× player)
 
-| α | whale is top holder | hegemony |
+| α | whale is top holder | average top share |
 |---|---|---|
-| 0.5 | 55% of runs | 80% |
-| 0.7 | 45% | 75% |
-| 1.0 | 60% | 90% |
+| 0.5 | 75% of runs | 87.2% |
+| 0.7 | 65% | 78.3% |
+| 1.0 | 75% | 85.0% |
 
 Against bots that never coordinate, a 10× whale dominates at every α — α
 alone cannot neutralize capital (already documented in MEMORY.md). The real
@@ -112,23 +126,26 @@ Adding `balancer` bots (raiders that target the current leader once it holds
 
 | roster | hegemony | net/tick | late c/t |
 |---|---|---|---|
-| mixed (no balancers) | 60% | −11.2 | 1.11 |
-| 2 balancers | **45%** | −27.1 | 1.69 |
-| whale + 3 balancers | **45%** (whale top in only **35%** of runs) | −50.5 | 2.08 |
+| mixed (no balancers) | 80% | −18.8 | 1.02 |
+| 2 balancers | **50%** | −31.3 | 1.94 |
+| whale + 3 balancers | 70%, but whale is top holder in only **30%** of runs | −51.4 | 1.74 |
 
 **Hegemony is primarily a player-behavior artifact, not resolver math.**
 When anyone punishes the leader, α=0.5 makes the punishment bite: the
-whale's top-holder rate collapses from 55% to 35%, and the leader-feeding
-economy flips into the strongest deflation measured in the lab. This is the
-empirical justification for keeping α at 0.5.
+whale's top-holder rate collapses from 75% (vs passive bots) to 30%, war
+intensity roughly doubles, and the economy flips into the strongest
+deflation measured in the lab. Note the residual 70% hegemony in the whale
+row: the balancers often overthrow the whale and one of *them* snowballs —
+power rotates instead of locking. This is the empirical justification for
+keeping α at 0.5.
 
 ## Honest limitations
 
 - Bots are simple heuristics; real players will find strategies (collusion,
   garrison games) no archetype models. Only the Phase-4 playtest is decisive.
 - 4 players / 9 tiles / 30 ticks; longer horizons may drift.
-- Hegemony at 60% (mixed bots) would be unacceptable in production if humans
-  played as passively as bots; the design bet — supported by §6 — is that
-  they will not. Watch this metric first in the playtest.
+- Hegemony estimates carry ±20pp seed noise (see caveat); judge it by the
+  balancer contrast, not by any single cell. Watch this metric first in the
+  playtest.
 - The inflation observed in quiet worlds is the standing argument for the
   GM-compute fee sink (mandatory at scale — CLAUDE.md).

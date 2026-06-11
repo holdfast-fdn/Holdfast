@@ -90,15 +90,15 @@ No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune fro
 
 `sim/resolver.py`: even fight 100v100 → 43.5%; ~676 Flux (≈7×) for 2:1 dominance; whale-split trade-off confirmed at α=0.5; reproducibility (identical inputs→outputs); Monte Carlo (20k) win-rate matches theoretical p (VRF unbiased); one tick = one settlement; burn accounting works.
 
-`sim/world_sim.py` (6-tick): emergent drama with zero narrative (a player overextended, nearly bankrupted, then had attacks rejected for insufficient balance); AI factions feel intentional (aggressive raiders vs cautious south); economy deflationary while active (~623 burned vs ~576 emission); an emergent "cursed tile" (attacked 5 ticks, never fell, garrison hardened each time).
+`sim/world_sim.py` (6-tick): emergent drama with zero narrative (a player overextended and had attacks rejected for insufficient balance); AI factions feel intentional (aggressive raiders vs cautious south); economy deflationary while active (~646 burned vs ~576 emission); an emergent "cursed tile" (tile_09 attacked in 5 of 6 ticks, never fell). Note: test players were renamed to alice/bob (conventional, depersonalized) — names feed the VRF contest hash, so the canonical demo numbers changed slightly from the original session run; the story shape and all verdicts are unchanged.
 
 **Verdict:** the mechanical skeleton produces pull even without narrative. Hermes narration will multiply something already alive.
 
 ## Phase 1 — balance lab findings (sim/balance_lab.py, full data in BALANCE.md)
 
 - **Recommended playtest set: α=0.5, δ=1.3, γ=0.3, β=0.3, yield=6, regen=4, cap=200, decay=0, start=250.** Changed from Phase 0: yield 12→6 and γ/β 0.5→0.3 — at yield 12 the economy inflates whenever activity dips; smaller spoils/defend-reward cut snowball fuel and increase burn.
-- **Garrison-decay decision: OFF (0.0).** The Phase-0 "cursed tile" does not reproduce as a systemic stalemate over 30-tick runs (0.0–0.3 cursed tiles/run without decay). Decay *worsens* hegemony (0→75%, 0.03→80%, 0.08→95%): eroded defenses help the strongest attacker most, and less garrison burned per conquest inflates supply. Revisit only if real players manufacture stalemates.
-- **Hegemony is a player-behavior artifact, not resolver math.** Mixed passive bots → 60% runaway-hegemony; add bots that target the leader once it holds ≥40% of tiles ("balancer") → 45%, and a 10× whale drops from top-holder in 55% of runs to 35%. α=0.5 is what makes ganging-up effective — this is the empirical justification for keeping it. Watch hegemony first in the Phase-4 playtest.
+- **Garrison-decay decision: OFF (0.0).** The Phase-0 "cursed tile" does not reproduce as a systemic stalemate over 30-tick runs (≤0.6 cursed tiles/run without decay). Decay *worsens* hegemony at the aggressive end (0.08 → 100%): eroded defenses help the strongest attacker most, and less garrison burned per conquest inflates supply. Revisit only if real players manufacture stalemates.
+- **Hegemony is a player-behavior artifact, not resolver math.** Mixed passive bots → 80% runaway-hegemony; add bots that target the leader once it holds ≥40% of tiles ("balancer") → 50%, and a 10× whale drops from top-holder in 75% of runs to 30% (power rotates among the balancers instead of locking). α=0.5 is what makes ganging-up effective — this is the empirical justification for keeping it. Caveat: hegemony rates carry ±20pp seed noise at 20 seeds; the balancer *contrast* is the robust signal, not any single percentage. Watch hegemony first in the Phase-4 playtest.
 - **Degenerate equilibrium confirmed: the all-turtle (passive) world.** Nobody attacks → no burn → +80 Flux/tick inflation. Passive worlds are the economic worst case; structural answer is the GM-compute fee + quiet-world emission throttling (later phases), contained in MVP by yield=6.
 - **Whale at every α dominates uncoordinated bots** — α alone cannot neutralize capital (reconfirmed empirically); the counterweight is anti-leader play, which α<1 empowers.
 
@@ -135,7 +135,7 @@ Sink (actions + burn + GM-compute fee) must be ≥ emission (tile yield), or it'
 
 ## Owner context
 
-- Handle: biglionaire. Indonesia. Windows/WSL2.
+- GitHub org: holdfast-fdn. Indonesia. Windows/WSL2.
 - Strong smart-contract security auditor (EVM/Base). Write/review contracts at audit grade; settlement contract holds funds → highest scrutiny.
 - Prefers restrained, professional tone over hype.
 - Pattern noted in-session: many strong project starts; the differentiator is finishing one. Holdfast's value is execution to a playable MVP, not more ideas.
