@@ -76,18 +76,21 @@ class ContestResult:
 
 
 def resolve_contest(intent: Intent, tile: Tile, seed: str,
-                    alpha: float = ALPHA) -> ContestResult:
+                    alpha: float = ALPHA,
+                    delta: float = DEFENDER_ADVANTAGE,
+                    gamma: float = SPOILS_RATIO,
+                    beta: float = DEFEND_REWARD) -> ContestResult:
     """Selesaikan satu contest secara deterministik. Fungsi murni."""
     contest_id = f"{intent.player}->{intent.target}"
     p_a = power(intent.committed, intent.modifier, alpha)
-    p_d = power(tile.garrison, tile.modifier, alpha, DEFENDER_ADVANTAGE)
+    p_d = power(tile.garrison, tile.modifier, alpha, delta)
     p = win_probability(p_a, p_d)
     roll = vrf(seed, contest_id)
     won = roll < p
 
     if won:
         # Attacker rebut tile. Spoils dari garrison; sisa garrison dibakar.
-        spoils = SPOILS_RATIO * tile.garrison
+        spoils = gamma * tile.garrison
         burned = tile.garrison - spoils
         return ContestResult(
             contest_id, intent.target, intent.player, tile.owner,
@@ -97,7 +100,7 @@ def resolve_contest(intent: Intent, tile: Tile, seed: str,
         )
     else:
         # Attacker kalah. Sebagian committed ke defender, sisa dibakar.
-        reward = DEFEND_REWARD * intent.committed
+        reward = beta * intent.committed
         burned = intent.committed - reward
         return ContestResult(
             contest_id, intent.target, intent.player, tile.owner,
@@ -114,7 +117,10 @@ class TickResult:
     total_to_players: float
 
 
-def resolve_tick(intents, tiles: dict, seed: str, alpha: float = ALPHA) -> TickResult:
+def resolve_tick(intents, tiles: dict, seed: str, alpha: float = ALPHA,
+                 delta: float = DEFENDER_ADVANTAGE,
+                 gamma: float = SPOILS_RATIO,
+                 beta: float = DEFEND_REWARD) -> TickResult:
     """
     Selesaikan semua intent satu tick.
     Aturan tabrakan: jika >1 attacker menyerang tile sama, urutkan by committed
@@ -136,7 +142,7 @@ def resolve_tick(intents, tiles: dict, seed: str, alpha: float = ALPHA) -> TickR
             tile = tiles[target]
             if it.player == tile.owner:
                 continue  # tidak menyerang diri sendiri
-            res = resolve_contest(it, tile, seed, alpha)
+            res = resolve_contest(it, tile, seed, alpha, delta, gamma, beta)
             results.append(res)
             total_burned += res.flux_burned
             total_to_players += res.flux_to_attacker + res.flux_to_defender

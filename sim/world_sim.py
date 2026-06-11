@@ -22,17 +22,31 @@ import random
 from dataclasses import dataclass, field, replace
 from resolver import (
     Tile, Intent, resolve_tick, power, win_probability,
-    ALPHA, DEFENDER_ADVANTAGE,
+    ALPHA, DEFENDER_ADVANTAGE, SPOILS_RATIO, DEFEND_REWARD,
 )
 
 # ---------------------------------------------------------------------------
-# Parameter dunia
+# Parameter dunia (default historis — dipakai demo & sebagai default SimParams)
 # ---------------------------------------------------------------------------
 YIELD_PER_TILE = 12.0     # Flux yang dihasilkan tile untuk pemiliknya tiap tick
 GARRISON_REGEN = 4.0      # garrison tumbuh sedikit tiap tick (sampai cap)
 GARRISON_CAP = 200.0
 STARTING_BALANCE = 250.0
 NATURE = "nature"         # tile netral, dijaga faksi AI
+
+
+@dataclass(frozen=True)
+class SimParams:
+    """Semua knob tuning sebagai argumen, bukan konstanta modul (Workstream A)."""
+    alpha: float = ALPHA
+    delta: float = DEFENDER_ADVANTAGE
+    gamma: float = SPOILS_RATIO
+    beta: float = DEFEND_REWARD
+    yield_per_tile: float = YIELD_PER_TILE
+    garrison_regen: float = GARRISON_REGEN
+    garrison_cap: float = GARRISON_CAP
+    garrison_decay: float = 0.0   # fraksi garrison meluruh per tick (0 = mati)
+    starting_balance: float = STARTING_BALANCE
 
 
 @dataclass
@@ -42,6 +56,7 @@ class Player:
     is_ai: bool = False
     # "kepribadian" sederhana untuk faksi AI / bot pemain
     aggression: float = 0.5   # 0..1, seberapa besar porsi saldo dipakai menyerang
+    archetype: str = "raider"  # raider | turtle | opportunist
 
 
 @dataclass
@@ -51,6 +66,9 @@ class World:
     players: dict
     total_burned: float = 0.0
     log: list = field(default_factory=list)
+    params: SimParams = field(default_factory=SimParams)
+    seed_prefix: str = ""      # membedakan VRF antar-run di sweep
+    total_emitted: float = 0.0
 
     def owned_by(self, name):
         return [t for t in self.tiles.values() if t.owner == name]
@@ -60,37 +78,124 @@ class World:
 # Fase 1: resource generation (emisi) — pemilik tile dapat yield
 # ---------------------------------------------------------------------------
 def phase_generate(world: World):
+    P = world.params
     for t in world.tiles.values():
         if t.owner != NATURE and t.owner in world.players:
-            world.players[t.owner].balance += YIELD_PER_TILE
-        # garrison regen menuju cap
-        new_g = min(GARRISON_CAP, t.garrison + GARRISON_REGEN)
+            world.players[t.owner].balance += P.yield_per_tile
+            world.total_emitted += P.yield_per_tile
+        # garrison meluruh (opsional) lalu regen menuju cap
+        new_g = min(P.garrison_cap,
+                    t.garrison * (1.0 - P.garrison_decay) + P.garrison_regen)
         world.tiles[t.tile_id] = replace(t, garrison=new_g)
 
 
 # ---------------------------------------------------------------------------
 # Fase 2: keputusan AI (faksi + bot pemain) — dunia bergerak saat offline
-# AI menyerang tetangga terlemah yang bukan miliknya, sesuai aggression & saldo.
+# Tiga arketipe (Workstream A): raider menyerang yang terlemah, turtle hanya
+# membangun pijakan lalu bertahan, opportunist menyerang saat peluang bagus.
 # ---------------------------------------------------------------------------
+def _decide_raider(world: World, p: Player, rng: random.Random):
+    budget = p.balance * p.aggression
+    if budget < 20:
+        return None
+    # pilih target: tile termurah-untuk-direbut yang bukan milik sendiri
+    candidates = [t for t in world.tiles.values() if t.owner != p.name]
+    if not candidates:
+        return None
+    # heuristik: target dengan garrison terendah, sedikit acak
+    candidates.sort(key=lambda t: t.garrison + rng.uniform(0, 20))
+    target = candidates[0]
+    commit = min(budget, p.balance)
+    if commit >= 20:
+        p.balance -= commit  # Flux dikunci saat commit
+        return Intent(p.name, target.tile_id, committed=round(commit, 1))
+    return None
+
+
+def _decide_turtle(world: World, p: Player, rng: random.Random):
+    # bertahan: hanya merebut tile netral sampai punya 2 pijakan ekonomi,
+    # setelah itu tidak pernah menyerang (menimbun saldo, andalkan garrison)
+    if len(world.owned_by(p.name)) >= 2:
+        return None
+    budget = p.balance * max(p.aggression, 0.4)
+    if budget < 20:
+        return None
+    candidates = [t for t in world.tiles.values() if t.owner == NATURE]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: t.garrison + rng.uniform(0, 20))
+    target = candidates[0]
+    commit = min(budget, p.balance)
+    if commit >= 20:
+        p.balance -= commit  # Flux dikunci saat commit
+        return Intent(p.name, target.tile_id, committed=round(commit, 1))
+    return None
+
+
+def _decide_opportunist(world: World, p: Player, rng: random.Random):
+    # menyerang hanya jika estimasi peluang menang cukup tinggi; selain itu
+    # menabung (saldo tumbuh -> serangan berikutnya lebih kuat)
+    P = world.params
+    budget = p.balance * p.aggression
+    if budget < 20:
+        return None
+    best, best_p = None, 0.0
+    for t in world.tiles.values():
+        if t.owner == p.name:
+            continue
+        p_a = power(budget, 1.0, P.alpha)
+        p_d = power(t.garrison, t.modifier, P.alpha, P.delta)
+        p_win = win_probability(p_a, p_d)
+        if p_win > best_p:
+            best, best_p = t, p_win
+    if best is None or best_p < 0.55:
+        return None
+    commit = min(budget, p.balance)
+    p.balance -= commit  # Flux dikunci saat commit
+    return Intent(p.name, best.tile_id, committed=round(commit, 1))
+
+
+def _decide_balancer(world: World, p: Player, rng: random.Random):
+    # raider anti-pemuncak: jika ada pemain menguasai >=40% tile, serang tile
+    # terlemah miliknya (meniru perilaku manusia mengeroyok pemimpin);
+    # selain itu berperilaku raider biasa
+    shares = {}
+    for t in world.tiles.values():
+        if t.owner != NATURE:
+            shares[t.owner] = shares.get(t.owner, 0) + 1
+    if shares:
+        leader = max(shares, key=shares.get)
+        if leader != p.name and shares[leader] / len(world.tiles) >= 0.4:
+            budget = p.balance * p.aggression
+            if budget < 20:
+                return None
+            candidates = [t for t in world.tiles.values() if t.owner == leader]
+            candidates.sort(key=lambda t: t.garrison + rng.uniform(0, 20))
+            target = candidates[0]
+            commit = min(budget, p.balance)
+            if commit >= 20:
+                p.balance -= commit  # Flux dikunci saat commit
+                return Intent(p.name, target.tile_id, committed=round(commit, 1))
+            return None
+    return _decide_raider(world, p, rng)
+
+
+ARCHETYPES = {
+    "raider": _decide_raider,
+    "turtle": _decide_turtle,
+    "opportunist": _decide_opportunist,
+    "balancer": _decide_balancer,
+}
+
+
 def ai_decide(world: World, rng: random.Random):
     intents = []
     for p in world.players.values():
         if not p.is_ai:
             continue
-        budget = p.balance * p.aggression
-        if budget < 20:
-            continue
-        # pilih target: tile termurah-untuk-direbut yang bukan milik sendiri
-        candidates = [t for t in world.tiles.values() if t.owner != p.name]
-        if not candidates:
-            continue
-        # heuristik: target dengan garrison terendah, sedikit acak
-        candidates.sort(key=lambda t: t.garrison + rng.uniform(0, 20))
-        target = candidates[0]
-        commit = min(budget, p.balance)
-        if commit >= 20:
-            intents.append(Intent(p.name, target.tile_id, committed=round(commit, 1)))
-            p.balance -= commit  # Flux dikunci saat commit
+        it = ARCHETYPES[p.archetype](world, p, rng)
+        if it is not None:
+            intents.append(it)
     return intents
 
 
@@ -117,7 +222,9 @@ def apply_human_intents(world: World, human_intents):
 # Fase 4: resolusi (pakai resolver teruji) + distribusi hasil ke saldo
 # ---------------------------------------------------------------------------
 def phase_resolve(world: World, intents, seed: str):
-    res = resolve_tick(intents, world.tiles, seed)
+    P = world.params
+    res = resolve_tick(intents, world.tiles, seed,
+                       alpha=P.alpha, delta=P.delta, gamma=P.gamma, beta=P.beta)
     # terapkan perubahan tile + bagikan flux ke saldo pemain
     tiles = dict(world.tiles)
     for r in res.results:
@@ -162,7 +269,7 @@ def detect_events(world: World, prev_owners: dict):
 def run_tick(world: World, human_intents, rng: random.Random):
     prev_owners = {tid: t.owner for tid, t in world.tiles.items()}
     world.tick += 1
-    seed = f"tick_{world.tick}_seed"
+    seed = f"{world.seed_prefix}tick_{world.tick}_seed"
 
     phase_generate(world)
     ai_intents = ai_decide(world, rng)
@@ -183,12 +290,14 @@ def snapshot(world: World):
     print(f"  Tile : " + "  ".join(f"{k}={v}" for k, v in sorted(holdings.items())))
 
 
-def build_world():
+def build_world(params: SimParams | None = None):
+    params = params if params is not None else SimParams()
+    sb = params.starting_balance
     players = {
-        "anggara": Player("anggara", STARTING_BALANCE),
-        "budi":    Player("budi", STARTING_BALANCE),
-        "south":   Player("south", STARTING_BALANCE, is_ai=True, aggression=0.6),
-        "raiders": Player("raiders", STARTING_BALANCE, is_ai=True, aggression=0.8),
+        "anggara": Player("anggara", sb),
+        "budi":    Player("budi", sb),
+        "south":   Player("south", sb, is_ai=True, aggression=0.6),
+        "raiders": Player("raiders", sb, is_ai=True, aggression=0.8),
     }
     tiles = {}
     layout = [
@@ -199,7 +308,7 @@ def build_world():
     for tid, owner in layout:
         g = 100.0 if owner != NATURE else 60.0  # netral lebih lemah, mengundang ekspansi
         tiles[tid] = Tile(tid, owner=owner, garrison=g)
-    return World(tick=0, tiles=tiles, players=players)
+    return World(tick=0, tiles=tiles, players=players, params=params)
 
 
 if __name__ == "__main__":
