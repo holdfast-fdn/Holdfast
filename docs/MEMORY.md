@@ -94,6 +94,14 @@ No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune fro
 
 **Verdict:** the mechanical skeleton produces pull even without narrative. Hermes narration will multiply something already alive.
 
+## Phase 1 — balance lab findings (sim/balance_lab.py, full data in BALANCE.md)
+
+- **Recommended playtest set: α=0.5, δ=1.3, γ=0.3, β=0.3, yield=6, regen=4, cap=200, decay=0, start=250.** Changed from Phase 0: yield 12→6 and γ/β 0.5→0.3 — at yield 12 the economy inflates whenever activity dips; smaller spoils/defend-reward cut snowball fuel and increase burn.
+- **Garrison-decay decision: OFF (0.0).** The Phase-0 "cursed tile" does not reproduce as a systemic stalemate over 30-tick runs (0.0–0.3 cursed tiles/run without decay). Decay *worsens* hegemony (0→75%, 0.03→80%, 0.08→95%): eroded defenses help the strongest attacker most, and less garrison burned per conquest inflates supply. Revisit only if real players manufacture stalemates.
+- **Hegemony is a player-behavior artifact, not resolver math.** Mixed passive bots → 60% runaway-hegemony; add bots that target the leader once it holds ≥40% of tiles ("balancer") → 45%, and a 10× whale drops from top-holder in 55% of runs to 35%. α=0.5 is what makes ganging-up effective — this is the empirical justification for keeping it. Watch hegemony first in the Phase-4 playtest.
+- **Degenerate equilibrium confirmed: the all-turtle (passive) world.** Nobody attacks → no burn → +80 Flux/tick inflation. Passive worlds are the economic worst case; structural answer is the GM-compute fee + quiet-world emission throttling (later phases), contained in MVP by yield=6.
+- **Whale at every α dominates uncoordinated bots** — α alone cannot neutralize capital (reconfirmed empirically); the counterweight is anti-leader play, which α<1 empowers.
+
 ## What is NOT proven (honest)
 
 - Sim uses fixed seeds + scripted players. Real players may find balance-breaking strategies (collusion, defensive/garrison exploits). Only human playtest answers this.

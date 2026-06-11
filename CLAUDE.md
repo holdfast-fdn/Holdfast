@@ -33,10 +33,12 @@ Node/TS bot · Hermes Agent (cron + retry — see reliability note) · resolver 
 |---|---|---|---|
 | Diminishing returns | α | 0.5 | exponent on Flux in power; <1 = upset-friendly |
 | Defender advantage | δ | 1.3 | taking a tile costs more than holding |
-| Spoils ratio | γ | 0.5 | share of garrison to winning attacker |
-| Defend reward | β | 0.5 | share of committed Flux to successful defender |
+| Spoils ratio | γ | 0.3 | share of garrison to winning attacker |
+| Defend reward | β | 0.3 | share of committed Flux to successful defender |
+| Tile yield | — | 6.0 | Flux emitted per tile per tick |
+| Garrison decay | — | 0 (off) | decided against — see BALANCE.md §4 |
 
-Starting values for playtest, not final. Only real-player data sets them.
+Phase-1 lab-tuned values (`docs/BALANCE.md` has the evidence; `sim/balance_lab.py` reproduces it). Starting values for playtest, not final. Only real-player data sets them. Note: `sim/resolver.py` module constants keep the Phase-0 defaults (γ=β=0.5) so its scenario outputs stay stable as the spec; pass tuned values as arguments (`SimParams`).
 
 ## How to work here
 
