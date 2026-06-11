@@ -27,10 +27,12 @@ Use the simulation as a balance lab. No new architecture.
 ## Phase 2 — On-chain settlement (Base testnet)
 
 Reproduce the resolver on-chain. Highest-audit-surface artifact — write at audit grade.
-- [ ] Flux ERC-20 on Base Sepolia.
-- [ ] Tile registry (ownership + garrison).
-- [ ] VRF integration for the per-tick seed.
-- [ ] Settlement contract: accepts per-tick state root + Merkle reward distribution; verifies and applies.
+- [x] Flux ERC-20 (`FluxToken.sol` — minimal, settlement is sole minter, open burn; not yet deployed to Base Sepolia).
+- [x] Tile registry (ownership + garrison + terrain mod, inside `HoldfastSettlement.sol`; region = config per ADR-001).
+- [ ] VRF integration for the per-tick seed (currently an operator-supplied word, committed in the TickSettled event — trusted-but-verifiable; real VRF before any value).
+- [x] Settlement contract (`HoldfastSettlement.sol`): one tx per tick — emission (yield + regen minted) then contests resolved ON-CHAIN via ResolverLib with enforced batch ordering, afford checks, escrowed garrisons, bucket2Root committed per tick. Design note: at MVP scale full on-chain resolution replaces the planned Merkle reward distribution (strictly more trustless); Merkle claims become relevant at player counts where direct escrow updates are too costly.
+- [ ] Production onboarding: how players acquire starting Flux (faucet/distribution) — open design item; tests fund via minter prank.
+- [ ] Settlement-level parity mirror in Python (tick-for-tick vs `world_sim`), extending the contest-math parity gate.
 - [x] **Parity test (the correctness gate), contest-math level:** `contracts/test/ResolverParity.t.sol` asserts `ResolverLib` reproduces `sim/resolver_fixed.py` (the integer spec, ≤2e-16 from the float reference) bit-for-bit over 87 fixtures + fuzz properties. α fixed at 0.5 → exact floor `sqrt`; fractional-α pow deferred deliberately. Extend the gate to full settlement when the contract lands.
 - [ ] Self-audit: reentrancy, precision, access control, pause/upgrade story, unprivileged-attacker drain vectors.
 

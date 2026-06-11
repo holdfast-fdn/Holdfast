@@ -5,6 +5,7 @@ libs = ["lib"]
 solc_version = "0.8.26"
 optimizer = true
 optimizer_runs = 10_000
+via_ir = true
 # settlement code is the highest-audit-surface artifact — keep warnings loud
 deny = "warnings"
 
