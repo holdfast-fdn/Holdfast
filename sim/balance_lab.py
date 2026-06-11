@@ -258,8 +258,25 @@ def scenario_tune():
     print("Looking for: net/tick <= 0, minimal hegemony, flips & activity alive.")
 
 
-REC_PARAMS = SimParams(alpha=0.5, delta=1.3, yield_per_tile=6.0,
-                       beta=0.3, gamma=0.3)
+def scenario_regen():
+    """Garrison regen is MINTED supply (on-chain: garrisons are escrowed
+    Flux), found while porting to Solidity. Re-tune yield x regen with the
+    corrected emission accounting."""
+    sets = []
+    for y in (3.0, 4.0, 6.0):
+        for rg in (0.0, 2.0, 4.0):
+            sets.append((f"y{y:.0f} regen{rg:.0f}", SimParams(
+                alpha=0.5, delta=1.3, yield_per_tile=y,
+                beta=0.3, gamma=0.3, garrison_regen=rg)))
+    print_reports("Yield × regen (corrected emission accounting)",
+                  run_sweep(sets))
+    print("Regen mints; looking for net/tick <= 0 with the world still alive.")
+
+
+# Recommended set rev2: yield 4 + regen 2 after the emission-accounting fix
+# (garrison regen mints supply; yield 6 + regen 4 was actually inflationary)
+REC_PARAMS = SimParams(alpha=0.5, delta=1.3, yield_per_tile=4.0,
+                       beta=0.3, gamma=0.3, garrison_regen=2.0)
 
 
 def scenario_counter():
@@ -318,6 +335,7 @@ SCENARIOS = {
     "archetypes": scenario_archetypes,
     "decay": scenario_decay,
     "tune": scenario_tune,
+    "regen": scenario_regen,
     "counter": scenario_counter,
     "whale": scenario_whale,
 }

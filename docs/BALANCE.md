@@ -1,5 +1,17 @@
 # BALANCE.md — Phase 1 parameter recommendation
 
+> **REVISION 2 (emission accounting fix).** Porting settlement to Solidity
+> exposed an accounting error in every net/tick figure below: on-chain, a
+> garrison is REAL escrowed Flux (a winning commit becomes the garrison and
+> later pays spoils/burns), therefore **garrison regen is minted supply** and
+> decay is burned supply. The original lab counted only tile yield as
+> emission, overstating deflation by ~regen×tiles per tick. With corrected
+> accounting the old recommended set (yield 6, regen 4) is **+11.2 INF**, not
+> −18.8 DEF. The recommendation below is re-tuned (yield 6→4, regen 4→2);
+> net/tick figures in §1–§4 tables predate the fix and overstate deflation by
+> up to +36/tick — their *comparative* conclusions (hegemony, decay verdict,
+> degeneracy) are unaffected. §2b and §6 use corrected numbers.
+
 Output of Workstream A (see `docs/PLAN.md`). All numbers below come from
 `sim/balance_lab.py` — 20 seeds × 30 ticks per parameter set, 9 tiles, 4 AI
 bots, fully deterministic (seed `1000+i` drives both the AI rng and the VRF
@@ -18,17 +30,17 @@ python3 balance_lab.py all     # or: sweep | archetypes | decay | tune | counter
 | δ (defender advantage) | **1.3** | 1.3 | unchanged — "taking costs more than holding" principle intact; mid-band is fine |
 | γ (spoils ratio) | **0.3** | 0.5 | smaller spoils = less snowball fuel for winners, bigger burn |
 | β (defend reward) | **0.3** | 0.5 | smaller reward = leaders fed less by failed attacks against them, bigger burn |
-| yield/tile/tick | **6.0** | 12.0 | at 12 the economy inflates whenever activity dips; at 6 it stays deflationary |
-| garrison regen | 4.0 | 4.0 | unchanged |
+| yield/tile/tick | **4.0** | 12.0 | rev2: with regen counted as emission, yield 6 was inflationary |
+| garrison regen | **2.0** | 4.0 | rev2: regen is MINTED supply (on-chain escrow semantics); 4 inflates at any yield |
 | garrison cap | 200.0 | 200.0 | unchanged |
 | garrison decay | **0.0 (off)** | n/a | decay did not help — see decision below |
 | starting balance | 250.0 | 250.0 | unchanged |
 
-Headline metrics of the recommended set (mixed-archetype roster):
-**upset rate 35.7% · holdings Gini 0.61 · net supply −18.8 Flux/tick
-(deflationary) · world stays active through the final ticks (1.0
-contests/tick) · runaway-hegemony 80% with passive bots, dropping to 50%
-with anti-leader play (see §6 and the noise caveat below).**
+Headline metrics of the recommended set rev2 (mixed-archetype roster,
+corrected accounting): **upset rate 36.8% · holdings Gini 0.47 · net supply
+−7.3 Flux/tick (deflationary) · late activity 1.46 contests/tick ·
+runaway-hegemony 60% with passive bots, 40% with anti-leader play (see §6
+and the noise caveat below).**
 
 ## Metric definitions
 
@@ -74,6 +86,22 @@ Yield 6 + β/γ 0.3 is the only family that is robustly deflationary (−12 to
 enforces the "sink ≥ emission" rule from CLAUDE.md without yet relying on
 the GM-compute fee. Hegemony within this family ranged 30–80% across cells —
 see the noise caveat; §6 shows behavior, not parameters, is what moves it.
+
+### 2b. Yield × regen re-tune (corrected emission accounting — rev2)
+
+| set (a=0.5 d=1.3 β/γ=0.3) | upset | gini | net/tick | hegemony | late c/t |
+|---|---|---|---|---|---|
+| y6 regen4 (old rec) | 35.7% | 0.61 | **+11.2 INF** | 80% | 1.02 |
+| y6 regen2 | 36.8% | 0.56 | −0.0 | 70% | 1.23 |
+| **y4 regen2 (rec rev2)** | **36.8%** | **0.47** | **−7.3 DEF** | **60%** | **1.46** |
+| y4 regen0 | 40.5% | 0.51 | −15.6 DEF | 60% | 1.15 |
+| y3 regen2 | 34.0% | 0.39 | −3.4 DEF | 45% | 1.02 |
+
+Regen 4 is inflationary at every yield tested. y4+regen2 keeps defense
+recovery alive (garrisons still heal, the "holding" feel survives) while the
+economy stays comfortably deflationary with the war activity *higher* than
+the old recommendation. y4+regen0 burns harder but garrisons never recover —
+rejected for feel; revisit with playtest data.
 
 ### 3. Archetype matrix (degenerate-equilibrium check)
 
@@ -122,21 +150,22 @@ counterweight is behavioral:
 ### 6. Counter-hegemony (the key finding)
 
 Adding `balancer` bots (raiders that target the current leader once it holds
-≥40% of tiles — a proxy for human anti-leader play), at the recommended set:
+≥40% of tiles — a proxy for human anti-leader play), at the rev2 recommended
+set with corrected accounting:
 
 | roster | hegemony | net/tick | late c/t |
 |---|---|---|---|
-| mixed (no balancers) | 80% | −18.8 | 1.02 |
-| 2 balancers | **50%** | −31.3 | 1.94 |
-| whale + 3 balancers | 70%, but whale is top holder in only **30%** of runs | −51.4 | 1.74 |
+| mixed (no balancers) | 60% | −7.3 DEF | 1.46 |
+| 2 balancers | **40%** | −11.2 DEF | 1.48 |
+| whale + 3 balancers | 50% hegemony; whale is top holder in **50%** of runs | **−78.3 DEF** | 1.53 |
 
 **Hegemony is primarily a player-behavior artifact, not resolver math.**
-When anyone punishes the leader, α=0.5 makes the punishment bite: the
-whale's top-holder rate collapses from 75% (vs passive bots) to 30%, war
-intensity roughly doubles, and the economy flips into the strongest
-deflation measured in the lab. Note the residual 70% hegemony in the whale
-row: the balancers often overthrow the whale and one of *them* snowballs —
-power rotates instead of locking. This is the empirical justification for
+When anyone punishes the leader, α=0.5 makes the punishment bite: against
+passive bots a 10× whale is top holder in 65–75% of runs (§5); against three
+balancers that drops to 50% here (30% in the pre-rev2 measurement — both
+runs agree on the direction, ±20pp seed noise applies), and the whale's
+capital churns into the strongest burn measured in the lab (−78/tick).
+Power rotates instead of locking. This is the empirical justification for
 keeping α at 0.5.
 
 ## Honest limitations

@@ -84,9 +84,14 @@ def phase_generate(world: World):
         if t.owner != NATURE and t.owner in world.players:
             world.players[t.owner].balance += P.yield_per_tile
             world.total_emitted += P.yield_per_tile
-        # garrison decays (optional) then regenerates toward the cap
-        new_g = min(P.garrison_cap,
-                    t.garrison * (1.0 - P.garrison_decay) + P.garrison_regen)
+        # garrison decays (optional) then regenerates toward the cap.
+        # On-chain semantics: garrison is REAL escrowed Flux (a winning commit
+        # becomes the garrison; spoils/burn draw from it), so regen is minted
+        # supply (emission) and decay is burned supply — account for both.
+        after_decay = t.garrison * (1.0 - P.garrison_decay)
+        world.total_burned += t.garrison - after_decay
+        new_g = min(P.garrison_cap, after_decay + P.garrison_regen)
+        world.total_emitted += new_g - after_decay
         world.tiles[t.tile_id] = replace(t, garrison=new_g)
 
 
