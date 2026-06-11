@@ -13,16 +13,16 @@ Phased build plan, lowest risk to highest. Guiding rule: **validate the loop is 
 
 **Exit (met):** simulation produces emergent drama and a self-correcting (deflationary-while-active) economy without any narrative layer.
 
-## Phase 1 — Tuning & balance lab
+## Phase 1 — Tuning & balance lab ✅ DONE
 
 Use the simulation as a balance lab. No new architecture.
-- [ ] Parameterize α, δ, yield, garrison regen, starting balance; run N seeds per set; report upset rate, holdings Gini, economy direction, runaway-hegemony check.
-- [ ] AI archetypes (turtle, raider, opportunist); check degenerate equilibria (all-turtle).
-- [ ] Garrison-decay decision (does the "cursed tile" create permanent stalemates?).
-- [ ] Whale test (one 10× player); confirm α keeps it competitive.
-- Output: `docs/BALANCE.md` with the recommended parameter set and evidence.
+- [x] Parameterize α, δ, yield, garrison regen, starting balance; run N seeds per set; report upset rate, holdings Gini, economy direction, runaway-hegemony check (`sim/balance_lab.py`).
+- [x] AI archetypes (turtle, raider, opportunist, + balancer); degenerate equilibrium found: the all-turtle world (+80 Flux/tick inflation).
+- [x] Garrison-decay decision: OFF — cursed tiles are not systemic; decay worsens hegemony.
+- [x] Whale test: α alone cannot contain a 10× whale vs passive bots; anti-leader play at α=0.5 collapses whale dominance 75%→30%.
+- [x] Output: `docs/BALANCE.md` — recommended set α=0.5 δ=1.3 γ=0.3 β=0.3 yield=6.
 
-**Exit:** a parameter set where, across seeds, no single strategy dominates and the economy stays healthy under high and low activity.
+**Exit (met, with caveat):** economy provably healthy while the world is active; hegemony is behavior-dependent (±20pp seed noise) — final verdict belongs to the Phase-4 playtest.
 
 ## Phase 2 — On-chain settlement (Base testnet)
 
@@ -31,7 +31,7 @@ Reproduce the resolver on-chain. Highest-audit-surface artifact — write at aud
 - [ ] Tile registry (ownership + garrison).
 - [ ] VRF integration for the per-tick seed.
 - [ ] Settlement contract: accepts per-tick state root + Merkle reward distribution; verifies and applies.
-- [ ] **Parity test (the correctness gate):** identical inputs through the Solidity resolver and `sim/resolver.py` must yield identical outputs. Write this test before completing the contract — it defines "correct." Watch fixed-point math for the fractional α exponent.
+- [x] **Parity test (the correctness gate), contest-math level:** `contracts/test/ResolverParity.t.sol` asserts `ResolverLib` reproduces `sim/resolver_fixed.py` (the integer spec, ≤2e-16 from the float reference) bit-for-bit over 87 fixtures + fuzz properties. α fixed at 0.5 → exact floor `sqrt`; fractional-α pow deferred deliberately. Extend the gate to full settlement when the contract lands.
 - [ ] Self-audit: reentrancy, precision, access control, pause/upgrade story, unprivileged-attacker drain vectors.
 
 **Exit:** bit-identical settlement results across the full Phase-0 scenario set; self-audit finds no critical/high issues.
