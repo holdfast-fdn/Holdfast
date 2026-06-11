@@ -1,35 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- HOLDFAST — primary mark "The Winged Hold"
-       A fortress H borne on the Herald's wings, the Flux spark at its heart.
-       Flat construction, three inks: field, metal (gold), signal (cyan).
-       Wings are three rising feather bars per side — reads at 16px. -->
+  <!-- HOLDFAST — vector glyph of the Winged Anchor logo (brand/holdfast-logo.jpg).
+       Simplified flat geometry for favicons, avatars, and small UI sizes where
+       the pixel-art logo cannot read. Three inks: metal (gold), chain (signal),
+       transparent field — place on Nyx/Basalt surfaces. -->
   <defs>
     <g id="wing">
-      <polygon points="238,130 118,88  134,116 238,160"/>
-      <polygon points="238,170 142,128 156,156 238,198"/>
-      <polygon points="238,208 172,180 184,204 238,228"/>
+      <polygon points="200,166 76,124  92,152 200,196"/>
+      <polygon points="200,206 100,164 114,192 200,234"/>
     </g>
   </defs>
 
-  <!-- crest field -->
-  <path d="M256 26 L446 92 L446 286
-           C446 390 362 452 256 486
-           C150 452 66 390 66 286
-           L66 92 Z"
-        fill="#11161F" stroke="#D9A845" stroke-width="9" stroke-linejoin="round"/>
+  <!-- the chain that seals the hold -->
+  <circle cx="256" cy="256" r="234" fill="none" stroke="#3FB8CE"
+          stroke-width="12" stroke-dasharray="26 16" opacity="0.9"/>
 
   <g fill="#D9A845">
-    <!-- the Herald's wings, crowning the hold -->
+    <!-- the Herald's wings -->
     <use href="#wing"/>
     <use href="#wing" transform="translate(512 0) scale(-1 1)"/>
 
-    <!-- fortress H -->
-    <rect x="168" y="238" width="36" height="158"/>
-    <rect x="308" y="238" width="36" height="158"/>
-    <rect x="204" y="298" width="104" height="38"/>
+    <!-- the anchor that holds fast -->
+    <circle cx="256" cy="84" r="30" fill="none" stroke="#D9A845" stroke-width="20"/>
+    <rect x="170" y="146" width="172" height="34" rx="6"/>
+    <rect x="150" y="140" width="24" height="46" rx="4"/>
+    <rect x="338" y="140" width="24" height="46" rx="4"/>
+    <rect x="240" y="150" width="32" height="190"/>
+    <polygon points="240,340 272,340 256,392"/>
+    <path d="M132 296 Q256 432 380 296 L348 272 Q256 376 164 272 Z"/>
+    <polygon points="132,300 112,244 168,262"/>
+    <polygon points="380,300 400,244 344,262"/>
   </g>
-
-  <!-- flux spark: halo gap, then the gem -->
-  <polygon points="256,284 289,317 256,350 223,317" fill="#11161F"/>
-  <polygon points="256,292 281,317 256,342 231,317" fill="#3FB8CE"/>
 </svg>

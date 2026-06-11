@@ -120,8 +120,10 @@ No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune fro
 
 - **v1 ("Bastion", ember/iron) superseded** — owner direction: more professional, game-company grade, and explicitly tied to Hermes. v1 files removed; system replaced 2026-06-11.
 - **Concept:** the GM is cast as **the Herald** — the winged messenger who carries every player's word and returns at dawn with news of what the world did while you slept. The myth maps onto the architecture: *the Herald speaks, the chain disposes* (Hermes carries the message; he never decides fate). "Wings carry the message, stone holds the ground."
-- **Mark:** "The Winged Hold" — a crest: fortress "H" (Holdfast · Hermes) borne on stepped angular wings, Flux spark (cyan diamond) at its heart. Flat, three inks. `brand/holdfast-mark.svg`.
-- **Token icon:** "The Winged Drachma" — coin with wings + flux spark. `brand/flux-token.svg`.
+- **Master logo (owner-chosen): "The Winged Anchor"** — pixel-art emblem, gold winged anchor bound in teal chains on night (`brand/holdfast-logo.jpg`). The symbolism is exact: to *hold fast* is the sailor's word for an anchor that won't drag (the name lives in the logo); wings = Hermes the Herald; chains = settled on-chain. Supersedes the interim "Winged Hold" H-crest.
+- **Vector glyph:** simplified flat winged anchor in a dashed chain ring (`brand/holdfast-mark.svg`) — for favicon/avatar/small sizes where pixel art can't read (<~64px). Master emblem is JPG; re-export as transparent PNG from source when available.
+- **Illustration style: pixel art** — deliberate, game-native, scales world art (isles, units, war scenes) at indie cost. Crisp pixels, flat inks, integer scaling only.
+- **Token icon:** "The Winged Drachma" — coin with feather-bar wings + flux spark. `brand/flux-token.svg`.
 - **Palette ("Gold on Night"):** Nyx #0B0E15 (bg), Basalt #151B28 (panels), Marble #F1EEE4 (text), Quicksilver #97A1B5 (secondary), Caduceus Gold #D9A845 (brand metal — spend rarely), Signal #3FB8CE (Flux/agent pulse), War #E25D38 and Laurel #6FA876 (state colors only). Flat, no gradients/glows.
 - **Type:** Cinzel (display — classical Roman capitals) + Inter (UI/body, tabular numbers).
 - **Taglines:** primary "THE WORLD MOVES WHILE YOU SLEEP."; legacy "HOLD WHAT IS YOURS." (war/season contexts); onboarding "SPEAK, AND THE GOD CARRIES IT."
