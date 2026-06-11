@@ -3,127 +3,188 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Holdfast — Brand System</title>
+<title>Holdfast — Brand System v2 · The Herald</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--obsidian:#11161D;--iron:#1A212B;--slate:#29323F;--steel:#6B7A8D;--bone:#ECE6D8;--ember:#E8622C;--gold:#D9A23E}
+  :root{
+    --nyx:#0B0E15; --basalt:#151B28; --field:#11161F;
+    --marble:#F1EEE4; --quicksilver:#97A1B5;
+    --gold:#D9A845; --signal:#3FB8CE;
+    --war:#E25D38; --laurel:#6FA876;
+    --line:#232B3C;
+  }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--obsidian);color:var(--bone);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.55;padding:48px 22px}
-  .wrap{max-width:780px;margin:0 auto}
-  .top{display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--slate);padding-bottom:24px}
-  .top svg{width:72px;height:72px}
-  .top h1{font-weight:800;font-size:30px;letter-spacing:-0.5px}
-  .top .t{color:var(--steel);font-size:11px;letter-spacing:5px;margin-top:4px}
-  h2{font-size:11px;letter-spacing:3px;color:var(--steel);text-transform:uppercase;margin:44px 0 18px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .card{background:var(--iron);border:1px solid var(--slate);border-radius:14px;padding:26px;display:flex;flex-direction:column;align-items:center;gap:14px}
-  .card svg{width:128px;height:128px}
-  .lbl{font-size:11px;color:var(--steel);letter-spacing:1.5px}
-  .light{background:var(--bone)} .light .lbl{color:var(--slate)}
-  .full{grid-column:1/-1}
-  .full svg{width:100%;height:auto;max-width:460px}
-  .pal{display:flex;gap:10px;flex-wrap:wrap}
-  .sw{flex:1;min-width:96px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
-  .sw .chip{height:56px} .sw .meta{padding:8px 10px;font-size:11px;color:var(--steel);background:var(--iron)}
-  .sw .meta b{color:var(--bone);font-weight:600;display:block;letter-spacing:.5px}
-  .note{color:var(--steel);font-size:13.5px;margin-top:14px}
-  .gridlines{stroke:#2E3A49;stroke-width:1}
+  body{background:var(--nyx);color:var(--marble);font-family:Inter,system-ui,sans-serif;line-height:1.6}
+  .wrap{max-width:1080px;margin:0 auto;padding:64px 32px 120px}
+  h1,h2,.display{font-family:Cinzel,serif}
+  h1{font-size:44px;font-weight:900;letter-spacing:6px}
+  h2{font-size:15px;font-weight:700;letter-spacing:5px;color:var(--gold);
+     border-bottom:1px solid var(--line);padding-bottom:12px;margin:88px 0 28px;text-transform:uppercase}
+  p{color:var(--quicksilver);max-width:72ch}
+  p strong{color:var(--marble);font-weight:600}
+  .kicker{color:var(--signal);font-size:12px;letter-spacing:6px;font-weight:600;text-transform:uppercase}
+  .lede{font-size:18px;color:var(--marble);max-width:64ch;margin-top:18px}
+  .grid{display:grid;gap:20px}
+  .card{background:var(--basalt);border:1px solid var(--line);border-radius:12px;padding:28px}
+  .card h3{font-size:13px;letter-spacing:3px;color:var(--marble);text-transform:uppercase;margin-bottom:10px}
+  .card p{font-size:14px}
+
+  /* hero */
+  .hero{display:grid;grid-template-columns:300px 1fr;gap:48px;align-items:center;margin-top:48px}
+  .hero img{width:100%;display:block}
+  .tagline{font-family:Cinzel,serif;font-weight:700;font-size:24px;letter-spacing:3px;margin-top:26px}
+  .tagline em{color:var(--gold);font-style:normal}
+
+  /* logo system */
+  .logos{grid-template-columns:repeat(3,1fr)}
+  .tile{border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;
+        min-height:220px;padding:24px;position:relative}
+  .tile .tag{position:absolute;left:14px;bottom:10px;font-size:11px;letter-spacing:2px;color:var(--quicksilver)}
+  .on-dark{background:var(--field)} .on-light{background:var(--marble)} .on-gold{background:var(--gold)}
+  .tile img{max-width:150px}
+  .tile.wide{grid-column:1/-1;min-height:160px}
+  .tile.wide img{max-width:680px;width:90%}
+
+  /* color */
+  .swatches{grid-template-columns:repeat(4,1fr)}
+  .sw{border-radius:12px;border:1px solid var(--line);overflow:hidden}
+  .sw .chip{height:96px}
+  .sw .meta{padding:12px 14px;background:var(--basalt);font-size:12px}
+  .sw .meta b{display:block;color:var(--marble);letter-spacing:1px}
+  .sw .meta span{color:var(--quicksilver)}
+
+  /* type */
+  .type-demo{border-left:3px solid var(--gold);padding-left:24px;margin:18px 0}
+  .type-demo .display{font-size:40px;font-weight:700;letter-spacing:5px}
+  .type-demo .ui{font-size:16px;color:var(--quicksilver)}
+  .small{font-size:12px;color:var(--quicksilver)}
+
+  /* voice table */
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{border:1px solid var(--line);padding:12px 16px;text-align:left;vertical-align:top}
+  th{color:var(--gold);font-size:12px;letter-spacing:2px;text-transform:uppercase}
+  td{color:var(--quicksilver)} td b{color:var(--marble)}
+
+  /* applications */
+  .apps{grid-template-columns:repeat(3,1fr)}
+  .avatar{width:96px;height:96px;border-radius:50%;overflow:hidden;border:2px solid var(--gold);margin:0 auto 14px}
+  .avatar img{width:100%;height:100%;object-fit:cover;transform:scale(1.25)}
+  .appicon{width:96px;height:96px;border-radius:22px;overflow:hidden;margin:0 auto 14px;background:var(--field);
+           display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+  .appicon img{width:78px}
+  .center{text-align:center}
+  ul{color:var(--quicksilver);font-size:14px;padding-left:20px}
+  li{margin:6px 0}
+  .ok{color:var(--laurel)} .no{color:var(--war)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-      <rect x="8" y="8" width="224" height="224" rx="46" fill="#11161D"/>
-      <rect x="8.75" y="8.75" width="222.5" height="222.5" rx="45.25" fill="none" stroke="#29323F" stroke-width="1.5"/>
-      <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
-      <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
-      <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
-      <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
-    </svg>
-    <div><h1>Holdfast</h1><div class="t">HOLD WHAT IS YOURS</div></div>
-  </div>
 
-  <h2>Primary mark</h2>
-  <div class="grid">
-    <div class="card">
-      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-        <rect x="8" y="8" width="224" height="224" rx="46" fill="#11161D"/>
-        <rect x="8.75" y="8.75" width="222.5" height="222.5" rx="45.25" fill="none" stroke="#29323F" stroke-width="1.5"/>
-        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
-        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
-        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
-        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
-      </svg>
-      <div class="lbl">TOKEN / APP ICON</div>
-    </div>
-    <div class="card">
-      <!-- construction grid -->
-      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-        <rect x="8" y="8" width="224" height="224" rx="46" fill="#11161D"/>
-        <g class="gridlines" opacity="0.5">
-          <line x1="62" y1="20" x2="62" y2="220"/><line x1="98" y1="20" x2="98" y2="220"/>
-          <line x1="142" y1="20" x2="142" y2="220"/><line x1="178" y1="20" x2="178" y2="220"/>
-          <line x1="20" y1="58" x2="220" y2="58"/><line x1="20" y1="104" x2="220" y2="104"/>
-          <line x1="20" y1="138" x2="220" y2="138"/><line x1="20" y1="184" x2="220" y2="184"/>
-        </g>
-        <g opacity="0.9">
-          <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="none" stroke="#ECE6D8" stroke-width="1.5"/>
-          <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="none" stroke="#ECE6D8" stroke-width="1.5"/>
-          <rect x="98" y="104" width="44" height="34" fill="none" stroke="#ECE6D8" stroke-width="1.5"/>
-          <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="none" stroke="#E8622C" stroke-width="1.5"/>
-        </g>
-      </svg>
-      <div class="lbl">CONSTRUCTION</div>
+  <div class="kicker">Brand System · v2 · “The Herald”</div>
+  <div class="hero">
+    <img src="holdfast-mark.svg" alt="Holdfast mark — the Winged Hold"/>
+    <div>
+      <h1>HOLDFAST</h1>
+      <p class="lede">A living-world strategy game mastered by a god. The Game Master —
+      built on the <strong>Hermes agent</strong> — is cast as <strong>the Herald</strong>:
+      the winged messenger who carries every player's word across the Sundered Isles,
+      and returns at dawn with news of what the world did while you slept.</p>
+      <div class="tagline">THE WORLD MOVES <em>WHILE YOU SLEEP.</em></div>
     </div>
   </div>
 
-  <h2>Wordmark</h2>
-  <div class="grid"><div class="card full">
-    <svg viewBox="0 0 620 150" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(40,38)">
-        <path d="M11 38 L21 28 L29 28 L29 74 L11 74 Z" fill="#ECE6D8"/>
-        <path d="M51 28 L59 28 L69 38 L69 74 L51 74 Z" fill="#ECE6D8"/>
-        <rect x="29" y="45" width="22" height="15" fill="#ECE6D8"/>
-        <path d="M33 60 L33 52 Q33 47 40 47 Q47 47 47 52 L47 60 Z" fill="#E8622C"/>
-      </g>
-      <text x="128" y="92" font-family="'Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="56" letter-spacing="-1" fill="#ECE6D8">HOLDFAST</text>
-      <rect x="129" y="106" width="26" height="3" fill="#E8622C"/>
-      <text x="162" y="112" font-family="'Helvetica Neue',Arial,sans-serif" font-weight="500" font-size="13" letter-spacing="6" fill="#6B7A8D">HOLD WHAT IS YOURS</text>
-    </svg>
-  </div></div>
-
-  <h2>On light · single-color</h2>
-  <div class="grid">
-    <div class="card light">
-      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#11161D"/>
-        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#11161D"/>
-        <rect x="98" y="104" width="44" height="34" fill="#11161D"/>
-        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
-      </svg>
-      <div class="lbl">ON LIGHT</div>
-    </div>
-    <div class="card">
-      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
-        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
-        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
-        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#ECE6D8"/>
-      </svg>
-      <div class="lbl">MONOCHROME STAMP</div>
-    </div>
+  <h2>01 · Concept</h2>
+  <p><strong>Wings carry the message. Stone holds the ground.</strong> Hermes is the god of
+  messages, roads, and trade — exactly what the GM does: it carries intent, narrates the road,
+  and meters the economy. But Hermes never decides fate; in Holdfast, outcomes are cut by the
+  deterministic chain. The myth maps one-to-one onto the architecture:
+  <strong>the Herald speaks, the chain disposes.</strong> The mark fuses both halves — a
+  fortress “H” (Holdfast · Hermes) borne on the Herald's wings, with the Flux spark at its heart.</p>
+  <div class="grid" style="grid-template-columns:repeat(3,1fr);margin-top:24px">
+    <div class="card"><h3>Mythic</h3><p>Greek-classical voice and forms: crests, marble, laurels.
+      A god runs this world — the brand should feel like his seal, not a SaaS logo.</p></div>
+    <div class="card"><h3>Sovereign</h3><p>Heraldry over hype. Ownership is real and settled in
+      stone (on-chain); the visual language is a coat of arms, gold on night.</p></div>
+    <div class="card"><h3>Alive</h3><p>The signal accent (cyan) is the only “tech” note —
+      the pulse of an always-on agent inside a classical frame.</p></div>
   </div>
 
-  <h2>Palette</h2>
-  <div class="pal">
-    <div class="sw"><div class="chip" style="background:#11161D"></div><div class="meta"><b>Obsidian</b>#11161D</div></div>
-    <div class="sw"><div class="chip" style="background:#1A212B"></div><div class="meta"><b>Iron</b>#1A212B</div></div>
-    <div class="sw"><div class="chip" style="background:#6B7A8D"></div><div class="meta"><b>Steel</b>#6B7A8D</div></div>
-    <div class="sw"><div class="chip" style="background:#ECE6D8"></div><div class="meta"><b>Bone</b>#ECE6D8</div></div>
-    <div class="sw"><div class="chip" style="background:#E8622C"></div><div class="meta"><b>Ember</b>#E8622C</div></div>
-    <div class="sw"><div class="chip" style="background:#D9A23E"></div><div class="meta"><b>Gold</b>#D9A23E</div></div>
+  <h2>02 · Logo System</h2>
+  <div class="grid logos">
+    <div class="tile on-dark"><img src="holdfast-mark.svg" alt="primary on dark"/><span class="tag">PRIMARY · ON NIGHT</span></div>
+    <div class="tile on-light"><img src="holdfast-mark.svg" alt="on marble"/><span class="tag">ON MARBLE</span></div>
+    <div class="tile on-dark"><img src="flux-token.svg" alt="flux token"/><span class="tag">FLUX · WINGED DRACHMA</span></div>
+    <div class="tile wide on-dark"><img src="holdfast-wordmark.svg" alt="wordmark"/><span class="tag">WORDMARK · CINZEL, TRACKED WIDE</span></div>
   </div>
-  <p class="note">Flat color, no gradients. Ember appears once — the gate. Gold is reserved for rare states (victory, hegemony). The angled pier shoulders reference star-fort bastion walls, not toy battlements — abstract enough to scale to a 16px favicon.</p>
+  <ul style="margin-top:18px">
+    <li><span class="ok">Do</span> — use the crest alone at small sizes (app icon, avatar, favicon); the spark must stay cyan.</li>
+    <li><span class="ok">Do</span> — keep clearspace of one pier-width around the crest.</li>
+    <li><span class="no">Don't</span> — add gradients, glows, or 3D bevels; the system is flat metal on night.</li>
+    <li><span class="no">Don't</span> — let any surface recolor the gold; gold is reserved for the brand and rare states.</li>
+    <li class="small">Production note: the wordmark SVG renders via the Cinzel webfont — outline to paths before external use.</li>
+  </ul>
+
+  <h2>03 · Color — “Gold on Night”</h2>
+  <div class="grid swatches">
+    <div class="sw"><div class="chip" style="background:#0B0E15"></div><div class="meta"><b>NYX</b><span>#0B0E15 · world background</span></div></div>
+    <div class="sw"><div class="chip" style="background:#151B28"></div><div class="meta"><b>BASALT</b><span>#151B28 · panels, cards</span></div></div>
+    <div class="sw"><div class="chip" style="background:#F1EEE4"></div><div class="meta"><b>MARBLE</b><span>#F1EEE4 · primary text</span></div></div>
+    <div class="sw"><div class="chip" style="background:#97A1B5"></div><div class="meta"><b>QUICKSILVER</b><span>#97A1B5 · secondary text</span></div></div>
+    <div class="sw"><div class="chip" style="background:#D9A845"></div><div class="meta"><b>CADUCEUS GOLD</b><span>#D9A845 · the brand metal — spend rarely</span></div></div>
+    <div class="sw"><div class="chip" style="background:#3FB8CE"></div><div class="meta"><b>SIGNAL</b><span>#3FB8CE · Flux, the Herald's pulse, links</span></div></div>
+    <div class="sw"><div class="chip" style="background:#E25D38"></div><div class="meta"><b>WAR</b><span>#E25D38 · combat & loss states only</span></div></div>
+    <div class="sw"><div class="chip" style="background:#6FA876"></div><div class="meta"><b>LAUREL</b><span>#6FA876 · victory & gain states only</span></div></div>
+  </div>
+  <p style="margin-top:18px">Hierarchy: night fields, marble text, quicksilver support.
+  <strong>Gold belongs to the brand and to rare, earned moments</strong> (a crown, a season title).
+  Signal cyan is functional — Flux amounts, the Herald speaking, live ticks. War and Laurel are
+  state colors, never decoration.</p>
+
+  <h2>04 · Typography</h2>
+  <div class="type-demo">
+    <div class="display">CINZEL — THE STONE VOICE</div>
+    <p class="small">Display · titles, the wordmark, season names, victory cards. Classical Roman
+    capitals: the inscription on a temple. Weights 700/900, tracked +4 to +8.</p>
+  </div>
+  <div class="type-demo">
+    <div class="ui" style="font-weight:600;color:var(--marble)">Inter — the working voice</div>
+    <p class="small">UI &amp; body · chat, stats, docs, the companion map. Weights 400–700,
+    normal tracking. Numbers always tabular.</p>
+  </div>
+
+  <h2>05 · The Herald — GM persona</h2>
+  <table>
+    <tr><th>Trait</th><th>In practice</th></tr>
+    <tr><td><b>Messenger, never judge</b></td><td>The Herald narrates what the chain decided; it never claims to decide. “The Fates have cut it so” — outcomes are reported as delivered news.</td></tr>
+    <tr><td><b>Classical, dry wit</b></td><td>Speaks in measured, slightly archaic English. Short sentences. No emoji walls, no hype. One sharp remark per message at most.</td></tr>
+    <tr><td><b>Remembers everything</b></td><td>Cites old grudges and debts by name and tick. Memory is the product; the voice should prove it constantly.</td></tr>
+    <tr><td><b>Charges the toll</b></td><td>Hermes is the god of trade: compute fees in Flux are framed as “the Herald's toll” — mythic in fiction, honest in mechanics.</td></tr>
+  </table>
+
+  <h2>06 · Applications</h2>
+  <div class="grid apps">
+    <div class="card center"><div class="avatar"><img src="holdfast-mark.svg" alt=""/></div>
+      <h3>@HoldfastGM</h3><p>Telegram/Discord avatar: crest cropped to circle, gold ring border.</p></div>
+    <div class="card center"><div class="appicon"><img src="holdfast-mark.svg" alt=""/></div>
+      <h3>App / Favicon</h3><p>Crest on Nyx in a rounded square. Spark stays visible down to 16&nbsp;px.</p></div>
+    <div class="card center"><div class="appicon" style="border-radius:50%"><img src="flux-token.svg" alt=""/></div>
+      <h3>Flux Token</h3><p>The winged drachma — wallet and exchange listing icon.</p></div>
+  </div>
+
+  <h2>07 · Taglines</h2>
+  <ul>
+    <li><b style="color:var(--marble)">THE WORLD MOVES WHILE YOU SLEEP.</b> — primary; the always-on Herald in one line.</li>
+    <li>HOLD WHAT IS YOURS. — legacy line, kept for war/season contexts.</li>
+    <li>SPEAK, AND THE GOD CARRIES IT. — onboarding; the NL-command promise.</li>
+  </ul>
+
+  <p class="small" style="margin-top:64px;border-top:1px solid var(--line);padding-top:18px">
+  Holdfast Brand System v2 · supersedes the v1 “Bastion” ember/iron identity ·
+  naming note: the “Holdfast” title's collision with <i>Holdfast: Nations at War</i> remains an
+  open trademark/discovery question (see docs/MEMORY.md) — this system's crest, palette, and
+  Herald persona survive a retitle if one is ever needed.</p>
 </div>
 </body>
 </html>

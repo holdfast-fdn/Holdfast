@@ -37,11 +37,11 @@ holdfast/
 ├── sim/
 │   ├── resolver.py           # PURE-FUNCTION contest math — the spec, TESTED
 │   └── world_sim.py          # multi-tick world simulation
-├── brand/
+├── brand/                    # v2 "The Herald" identity
 │   ├── holdfast-brand.html   # brand system sheet
-│   ├── holdfast-icon-bastion.svg
-│   ├── holdfast-icon-hexhold.svg
-│   └── holdfast-wordmark.svg
+│   ├── holdfast-mark.svg     # primary crest — the Winged Hold
+│   ├── holdfast-wordmark.svg
+│   └── flux-token.svg        # token icon — the Winged Drachma
 └── ui/
     ├── holdfast-telegram.html        # PRIMARY surface: NL + GM chat (interactive)
     ├── holdfast-isles.html           # web companion: illustrative island map (read-only)

@@ -116,12 +116,17 @@ No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune fro
 - **Tech: web-native, no Godot** (ADR-002). 2D first (SVG/Canvas; PixiJS if needed); three.js + low-poly islands as an optional later "hero map." `ui/holdfast-companion-iso.html` is an isometric Canvas engine scaffold ready to receive Kenney sprites.
 - **Assets:** Kenney.nl (CC0) is the safe commercial source (no attribution required); itch.io packs vary per-license (prefer explicit commercial; avoid CC-BY-NC). Keep a credits file regardless; avoid trademarked styles.
 
-## Brand
+## Brand (v2 — "The Herald")
 
-- Mark: **Bastion** — an "H" monogram whose piers are fortified towers with chamfered (star-fort) shoulders and an ember gate. Token/app icon form.
-- Palette (flat, no gradients): Obsidian #0E131A/#11161D, Iron #1A212B, Steel #6B7A8D, Bone #ECE6D8, Ember #E8622C (the single loud accent — spent once), Gold #D9A23E (rare states only).
-- Tagline: "HOLD WHAT IS YOURS."
-- Files in `brand/`.
+- **v1 ("Bastion", ember/iron) superseded** — owner direction: more professional, game-company grade, and explicitly tied to Hermes. v1 files removed; system replaced 2026-06-11.
+- **Concept:** the GM is cast as **the Herald** — the winged messenger who carries every player's word and returns at dawn with news of what the world did while you slept. The myth maps onto the architecture: *the Herald speaks, the chain disposes* (Hermes carries the message; he never decides fate). "Wings carry the message, stone holds the ground."
+- **Mark:** "The Winged Hold" — a crest: fortress "H" (Holdfast · Hermes) borne on stepped angular wings, Flux spark (cyan diamond) at its heart. Flat, three inks. `brand/holdfast-mark.svg`.
+- **Token icon:** "The Winged Drachma" — coin with wings + flux spark. `brand/flux-token.svg`.
+- **Palette ("Gold on Night"):** Nyx #0B0E15 (bg), Basalt #151B28 (panels), Marble #F1EEE4 (text), Quicksilver #97A1B5 (secondary), Caduceus Gold #D9A845 (brand metal — spend rarely), Signal #3FB8CE (Flux/agent pulse), War #E25D38 and Laurel #6FA876 (state colors only). Flat, no gradients/glows.
+- **Type:** Cinzel (display — classical Roman capitals) + Inter (UI/body, tabular numbers).
+- **Taglines:** primary "THE WORLD MOVES WHILE YOU SLEEP."; legacy "HOLD WHAT IS YOURS." (war/season contexts); onboarding "SPEAK, AND THE GOD CARRIES IT."
+- **GM persona (the Herald):** messenger never judge (reports outcomes as delivered news); classical dry wit; proves its memory constantly (cites grudges by name and tick); compute fees framed as "the Herald's toll."
+- The crest/palette/persona survive a retitle if the "Holdfast" name collision ever forces one. Full sheet: `brand/holdfast-brand.html`. UI rework to match v2 is planned but not done.
 
 ## Scaling (see ADR-001)
 

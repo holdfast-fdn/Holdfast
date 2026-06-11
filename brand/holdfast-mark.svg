@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- HOLDFAST — primary mark "The Winged Hold"
+       A fortress H borne on the Herald's wings, the Flux spark at its heart.
+       Flat construction, three inks: field, metal (gold), signal (cyan).
+       Wings are three rising feather bars per side — reads at 16px. -->
+  <defs>
+    <g id="wing">
+      <polygon points="238,130 118,88  134,116 238,160"/>
+      <polygon points="238,170 142,128 156,156 238,198"/>
+      <polygon points="238,208 172,180 184,204 238,228"/>
+    </g>
+  </defs>
+
+  <!-- crest field -->
+  <path d="M256 26 L446 92 L446 286
+           C446 390 362 452 256 486
+           C150 452 66 390 66 286
+           L66 92 Z"
+        fill="#11161F" stroke="#D9A845" stroke-width="9" stroke-linejoin="round"/>
+
+  <g fill="#D9A845">
+    <!-- the Herald's wings, crowning the hold -->
+    <use href="#wing"/>
+    <use href="#wing" transform="translate(512 0) scale(-1 1)"/>
+
+    <!-- fortress H -->
+    <rect x="168" y="238" width="36" height="158"/>
+    <rect x="308" y="238" width="36" height="158"/>
+    <rect x="204" y="298" width="104" height="38"/>
+  </g>
+
+  <!-- flux spark: halo gap, then the gem -->
+  <polygon points="256,284 289,317 256,350 223,317" fill="#11161F"/>
+  <polygon points="256,292 281,317 256,342 231,317" fill="#3FB8CE"/>
+</svg>
