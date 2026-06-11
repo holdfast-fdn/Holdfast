@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Holdfast — Region Command</title>
+<style>
+  :root{
+    --obsidian:#0E131A; --iron:#161D27; --panel:#1A212B; --slate:#29323F;
+    --steel:#6B7A8D; --bone:#ECE6D8; --ember:#E8622C; --gold:#D9A23E;
+    --you:#E8622C; --iron-pact:#5B8DB8; --horde:#C0413B; --wild:#3C4654;
+    --mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,monospace;
+    --sans:'Helvetica Neue',Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 70% -10%, #1b2530 0%, transparent 60%),
+      var(--obsidian);
+    color:var(--bone);font-family:var(--sans);min-height:100vh;
+    -webkit-font-smoothing:antialiased;padding:16px;
+  }
+  .app{max-width:1080px;margin:0 auto}
+
+  /* ---- HUD ---- */
+  .hud{display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    background:linear-gradient(180deg,#1b232e,#141b24);
+    border:1px solid var(--slate);border-radius:14px;padding:12px 18px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand svg{width:34px;height:34px;display:block}
+  .brand .nm{font-weight:800;letter-spacing:-0.3px;font-size:17px}
+  .brand .sb{font-size:9px;letter-spacing:3px;color:var(--steel);margin-top:1px}
+  .spacer{flex:1}
+  .stat{display:flex;flex-direction:column;gap:2px;min-width:64px}
+  .stat .k{font-size:9px;letter-spacing:1.5px;color:var(--steel);text-transform:uppercase}
+  .stat .v{font-family:var(--mono);font-size:18px;font-weight:600}
+  .stat .v.flux{color:var(--ember)}
+  .stat .v.timer{color:var(--bone)}
+  .tickbadge{display:flex;align-items:center;gap:7px;background:#10161e;
+    border:1px solid var(--slate);border-radius:9px;padding:7px 12px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ember);
+    box-shadow:0 0 0 0 rgba(232,98,44,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,98,44,.5)}70%{box-shadow:0 0 0 8px rgba(232,98,44,0)}100%{box-shadow:0 0 0 0 rgba(232,98,44,0)}}
+
+  /* ---- layout ---- */
+  .grid{display:grid;grid-template-columns:1.45fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--slate);border-radius:14px}
+  .card h3{font-size:10px;letter-spacing:2.5px;color:var(--steel);text-transform:uppercase;
+    padding:14px 16px 0}
+
+  /* ---- map ---- */
+  .mapwrap{padding:6px 6px 14px}
+  svg.map{width:100%;height:auto;display:block}
+  .hex{cursor:pointer;transition:filter .15s}
+  .hex:hover{filter:brightness(1.15)}
+  .hex.locked{cursor:default}
+  .htxt{font-family:var(--mono);font-weight:600;fill:var(--bone);text-anchor:middle;pointer-events:none}
+  .hsub{font-family:var(--mono);font-size:8px;fill:rgba(236,230,216,.55);text-anchor:middle;pointer-events:none;letter-spacing:.5px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:11px;color:var(--steel)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+  /* ---- action panel ---- */
+  .right{display:flex;flex-direction:column;gap:14px}
+  .action{padding:14px 16px 18px}
+  .target{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .target .nm{font-size:15px;font-weight:700}
+  .target .own{font-size:11px;color:var(--steel);margin-top:2px}
+  .pill{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:7px;background:#10161e;border:1px solid var(--slate)}
+  .empty{color:var(--steel);font-size:13px;padding:18px 0;text-align:center;line-height:1.6}
+
+  .slabel{display:flex;justify-content:space-between;font-size:11px;color:var(--steel);margin:16px 0 6px;letter-spacing:.5px}
+  .slabel b{font-family:var(--mono);color:var(--bone);font-weight:600}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--ember) 0%,var(--ember) var(--p,40%),#28313d var(--p,40%));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--bone);border:3px solid var(--ember);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--bone);border:3px solid var(--ember);cursor:pointer}
+
+  .odds{display:flex;align-items:flex-end;gap:14px;margin-top:18px;
+    background:#10161e;border:1px solid var(--slate);border-radius:11px;padding:14px 16px}
+  .odds .big{font-family:var(--mono);font-size:40px;font-weight:700;color:var(--ember);line-height:1}
+  .odds .meta{font-size:11px;color:var(--steel);line-height:1.5}
+  .odds .meta b{color:var(--bone);font-family:var(--mono);font-weight:600}
+  .probbar{height:6px;border-radius:4px;background:#28313d;margin-top:10px;overflow:hidden}
+  .probbar span{display:block;height:100%;background:var(--ember);transition:width .18s}
+
+  .btn{width:100%;margin-top:16px;padding:13px;border:none;border-radius:11px;cursor:pointer;
+    font-family:var(--sans);font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase}
+  .btn.primary{background:var(--ember);color:#fff}
+  .btn.primary:hover{background:#f0703a}
+  .btn.primary:disabled{background:#3a2a22;color:#7a5e4f;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1px solid var(--slate);color:var(--bone);margin-top:10px}
+  .btn.ghost:hover{border-color:var(--steel)}
+
+  /* ---- pending ---- */
+  .pending{padding:0 16px 16px}
+  .porder{display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;padding:9px 11px;background:#10161e;border:1px solid var(--slate);
+    border-radius:9px;margin-top:8px}
+  .porder .t{font-family:var(--mono);color:var(--bone)}
+  .porder .c{font-family:var(--mono);color:var(--ember)}
+
+  /* ---- GM feed ---- */
+  .gm{padding:14px 16px 16px}
+  .gmhead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .gmhead svg{width:26px;height:26px}
+  .gmhead .nm{font-size:12px;font-weight:700}
+  .gmhead .sb{font-size:9px;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+  .feed{max-height:230px;overflow-y:auto;margin-top:10px;display:flex;flex-direction:column;gap:10px}
+  .msg{font-size:13px;line-height:1.55;color:#cdd4dc;border-left:2px solid var(--slate);padding-left:11px}
+  .msg.win{border-color:var(--ember)} .msg.lose{border-color:var(--horde)}
+  .msg .tm{font-family:var(--mono);font-size:9px;color:var(--steel);letter-spacing:1px;display:block;margin-bottom:2px}
+  .feed::-webkit-scrollbar{width:6px}.feed::-webkit-scrollbar-thumb{background:#2c3744;border-radius:3px}
+  .footnote{font-size:10px;color:var(--steel);text-align:center;margin-top:18px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="brand">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="8" width="224" height="224" rx="50" fill="#11161D"/>
+        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
+        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
+        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
+        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
+      </svg>
+      <div><div class="nm">HOLDFAST</div><div class="sb">VERDANT MARCHES · REGION I</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="stat"><span class="k">Flux</span><span class="v flux" id="bal">340</span></div>
+    <div class="stat"><span class="k">Tiles</span><span class="v" id="tiles">2 / 9</span></div>
+    <div class="tickbadge"><span class="dot"></span>
+      <div class="stat"><span class="k">Tick 24 closes</span><span class="v timer" id="timer">11:58:04</span></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- MAP -->
+    <div class="card">
+      <h3>The Region</h3>
+      <div class="mapwrap"><svg class="map" id="map" viewBox="0 0 330 268" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div class="legend">
+        <span><i style="background:#E8622C"></i>You</span>
+        <span><i style="background:#5B8DB8"></i>Iron Pact</span>
+        <span><i style="background:#C0413B"></i>Ashen Horde</span>
+        <span><i style="background:#3C4654"></i>Unclaimed</span>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div class="card">
+        <h3>Command</h3>
+        <div class="action" id="action">
+          <div class="empty" id="emptyMsg">Select an enemy or unclaimed tile<br>to plan an assault.</div>
+          <div id="planner" style="display:none">
+            <div class="target">
+              <div><div class="nm" id="tName">Tile 06</div><div class="own" id="tOwn">Ashen Horde · garrison</div></div>
+              <div class="pill" id="tGar">140</div>
+            </div>
+            <div class="slabel"><span>Commit Flux</span><b id="commitVal">120</b></div>
+            <input type="range" id="commit" min="20" max="340" value="120" step="5"/>
+            <div class="odds">
+              <div class="big" id="prob">—</div>
+              <div class="meta">win chance<br>your power <b id="pa">—</b><br>defense <b id="pd">—</b></div>
+            </div>
+            <div class="probbar"><span id="pbar" style="width:0%"></span></div>
+            <button class="btn primary" id="commitBtn">Commit assault</button>
+          </div>
+        </div>
+        <div class="pending" id="pendingWrap" style="display:none">
+          <h3 style="padding:0 0 4px">Pending this tick</h3>
+          <div id="pending"></div>
+          <button class="btn ghost" id="resolveBtn">Close tick &amp; resolve</button>
+        </div>
+      </div>
+
+      <!-- GM FEED -->
+      <div class="card">
+        <div class="gm">
+          <div class="gmhead">
+            <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="8" width="224" height="224" rx="60" fill="#11161D" stroke="#29323F" stroke-width="3"/>
+              <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
+              <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
+              <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
+              <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#D9A23E"/>
+            </svg>
+            <div><div class="nm">Game Master</div><div class="sb">Autonomous · always watching</div></div>
+          </div>
+          <div class="feed" id="feed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Win chance is computed live with the real resolver: p = Pₐ/(Pₐ+P_d), Pₐ=commit^0.5, P_d=garrison^0.5×1.3.<br>
+    The Game Master narrates outcomes it cannot decide — settlement is deterministic.
+  </div>
+</div>
+
+<script>
+const ALPHA=0.5, DELTA=1.3;
+const COLORS={you:'#E8622C','Iron Pact':'#5B8DB8','Ashen Horde':'#C0413B',Unclaimed:'#3C4654'};
+let balance=340, selected=null, pending=[];
+
+// tile state (mid-game so the world feels alive)
+let tiles=[
+  {id:'01',owner:'you',gar:120},{id:'02',owner:'you',gar:95},{id:'03',owner:'Unclaimed',gar:60},
+  {id:'04',owner:'Iron Pact',gar:110},{id:'05',owner:'Unclaimed',gar:65},{id:'06',owner:'Ashen Horde',gar:140},
+  {id:'07',owner:'Unclaimed',gar:55},{id:'08',owner:'Ashen Horde',gar:100},{id:'09',owner:'Iron Pact',gar:80},
+];
+// pointy-top honeycomb centers
+const S=42, centers=[
+  {x:70,y:60},{x:143,y:60},{x:216,y:60},
+  {x:106,y:123},{x:179,y:123},{x:252,y:123},
+  {x:70,y:186},{x:143,y:186},{x:216,y:186},
+];
+function hexPts(cx,cy){let p=[];for(let i=0;i<6;i++){let a=Math.PI/180*(60*i-30);p.push((cx+S*Math.cos(a)).toFixed(1)+','+(cy+S*Math.sin(a)).toFixed(1));}return p.join(' ');}
+
+function fillFor(o){return o==='you'?'#7a3a22':o==='Iron Pact'?'#28465e':o==='Ashen Horde'?'#5e2421':'#222a35';}
+function strokeFor(o){return COLORS[o]||'#3C4654';}
+
+function renderMap(){
+  const svg=document.getElementById('map'); svg.innerHTML='';
+  tiles.forEach((t,i)=>{
+    const c=centers[i];
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',hexPts(c.x,c.y));
+    poly.setAttribute('fill',fillFor(t.owner));
+    poly.setAttribute('stroke', selected===i?'#E8622C':strokeFor(t.owner));
+    poly.setAttribute('stroke-width', selected===i?'3.5':'2.5');
+    poly.setAttribute('class','hex'+(t.owner==='you'?' locked':''));
+    poly.onclick=()=>selectTile(i);
+    g.appendChild(poly);
+    const gar=document.createElementNS('http://www.w3.org/2000/svg','text');
+    gar.setAttribute('x',c.x);gar.setAttribute('y',c.y+2);gar.setAttribute('class','htxt');
+    gar.setAttribute('font-size','16');gar.textContent=t.gar;g.appendChild(gar);
+    const sub=document.createElementNS('http://www.w3.org/2000/svg','text');
+    sub.setAttribute('x',c.x);sub.setAttribute('y',c.y+16);sub.setAttribute('class','hsub');
+    sub.textContent=t.owner==='you'?'YOURS':t.owner==='Unclaimed'?'OPEN':t.owner.toUpperCase().split(' ')[0];
+    g.appendChild(sub);
+    // pending marker
+    if(pending.find(p=>p.idx===i)){
+      const m=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      m.setAttribute('cx',c.x+26);m.setAttribute('cy',c.y-26);m.setAttribute('r','7');
+      m.setAttribute('fill','#E8622C');m.setAttribute('stroke','#0E131A');m.setAttribute('stroke-width','2');
+      g.appendChild(m);
+    }
+    svg.appendChild(g);
+  });
+}
+
+function power(f){return Math.pow(f,ALPHA);}
+function winProb(commit,gar){const pa=power(commit), pd=power(gar)*DELTA; return {p:pa/(pa+pd),pa,pd};}
+
+function selectTile(i){
+  if(tiles[i].owner==='you') return;
+  selected=i;
+  document.getElementById('emptyMsg').style.display='none';
+  document.getElementById('planner').style.display='block';
+  const t=tiles[i];
+  document.getElementById('tName').textContent='Tile '+t.id;
+  document.getElementById('tOwn').textContent=t.owner+' · garrison';
+  document.getElementById('tGar').textContent=t.gar;
+  const sl=document.getElementById('commit');
+  sl.max=Math.max(20,balance); sl.value=Math.min(120,balance);
+  updateOdds(); renderMap();
+}
+
+function updateOdds(){
+  if(selected===null) return;
+  const commit=+document.getElementById('commit').value;
+  const t=tiles[selected];
+  const {p,pa,pd}=winProb(commit,t.gar);
+  document.getElementById('commitVal').textContent=commit;
+  document.getElementById('prob').textContent=Math.round(p*100)+'%';
+  document.getElementById('pa').textContent=pa.toFixed(1);
+  document.getElementById('pd').textContent=pd.toFixed(1);
+  document.getElementById('pbar').style.width=(p*100)+'%';
+  const pct=((commit-20)/(Math.max(20,balance)-20)*100);
+  document.getElementById('commit').style.setProperty('--p',pct+'%');
+  document.getElementById('commitBtn').disabled = commit>balance;
+}
+
+document.getElementById('commit').addEventListener('input',updateOdds);
+
+document.getElementById('commitBtn').onclick=()=>{
+  const commit=+document.getElementById('commit').value;
+  if(commit>balance) return;
+  pending.push({idx:selected,commit,tileId:tiles[selected].id});
+  balance-=commit;
+  document.getElementById('bal').textContent=balance;
+  selected=null;
+  document.getElementById('planner').style.display='none';
+  document.getElementById('emptyMsg').style.display='block';
+  renderPending(); renderMap();
+};
+
+function renderPending(){
+  const wrap=document.getElementById('pendingWrap'), box=document.getElementById('pending');
+  if(pending.length===0){wrap.style.display='none';return;}
+  wrap.style.display='block'; box.innerHTML='';
+  pending.forEach(p=>{
+    const d=document.createElement('div');d.className='porder';
+    d.innerHTML=`<span class="t">→ Tile ${p.tileId}</span><span class="c">${p.commit} Flux</span>`;
+    box.appendChild(d);
+  });
+}
+
+function addMsg(text,cls){
+  const f=document.getElementById('feed');
+  const d=document.createElement('div');d.className='msg'+(cls?' '+cls:'');
+  const now='TICK '+(cls?'25':'24');
+  d.innerHTML=`<span class="tm">${now}</span>${text}`;
+  f.prepend(d);
+}
+
+document.getElementById('resolveBtn').onclick=()=>{
+  if(pending.length===0) return;
+  addMsg('Tick 24 closes. The region holds its breath as committed forces move under cover of night.',null);
+  pending.forEach(p=>{
+    const t=tiles[p.idx];
+    const {p:prob}=winProb(p.commit,t.gar);
+    const roll=Math.random();
+    if(roll<prob){
+      const spoils=Math.round(t.gar*0.5);
+      balance+=spoils;
+      addMsg(`<b style="color:#E8622C">Tile ${t.id} falls.</b> Your assault broke the ${t.owner} garrison (${Math.round(prob*100)}% chance, won). You claim ${spoils} Flux in spoils and raise your banner.`,'win');
+      t.owner='you'; t.gar=p.commit;
+    }else{
+      addMsg(`<b style="color:#C0413B">Tile ${t.id} holds.</b> The ${t.owner} repelled your assault (${Math.round(prob*100)}% chance, lost). Your committed Flux is spent on the walls.`,'lose');
+    }
+  });
+  // a touch of "world moves on its own"
+  const wild=tiles.filter(t=>t.owner==='Ashen Horde'&&!pending.find(p=>p.idx===tiles.indexOf(t)));
+  if(wild.length){addMsg('Elsewhere, the Ashen Horde reinforced its eastern hold. The war does not wait for you.',null);}
+  pending=[]; balance+=24; // tile yield
+  document.getElementById('bal').textContent=balance;
+  document.getElementById('tiles').textContent=tiles.filter(t=>t.owner==='you').length+' / 9';
+  renderPending(); renderMap();
+};
+
+// seed the GM feed with "what happened overnight"
+addMsg('While you slept, the Ashen Horde pressed the eastern marches and took an unclaimed ridge. Two open tiles remain contested.',null);
+addMsg('Your scouts report Tile 06\\'s garrison growing — each failed assault has only hardened it. It is becoming a fortress.',null);
+addMsg('Iron Pact has gone quiet. Quiet factions are either weak or planning. The region remembers which.',null);
+
+// fake countdown for ambiance
+let secs=43084;
+setInterval(()=>{secs--;const h=String(Math.floor(secs/3600)).padStart(2,'0');
+  const m=String(Math.floor(secs%3600/60)).padStart(2,'0');const s=String(secs%60).padStart(2,'0');
+  document.getElementById('timer').textContent=`${h}:${m}:${s}`;},1000);
+
+renderMap();
+</script>
+</body>
+</html>

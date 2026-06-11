@@ -1,0 +1,133 @@
+# MEMORY.md — Holdfast
+
+The complete decision record from the design session. The "why" behind every choice. When in doubt, this file wins over assumptions.
+
+---
+
+## Identity
+
+- **Project:** Holdfast.
+- **World:** *The Sundered Isles* — territories are islands on a sea; players contest them.
+- **Token:** **Flux** — ERC-20 on Base, the economic medium. (Renamed away from earlier "Flux as placeholder" concerns about namespace collisions with other crypto/AI "FLUX" projects — flagged as a real branding risk; final ticker/domain availability still to be checked.)
+- **GM:** Hermes Agent, surfaced as `@HoldfastGM`.
+- **Factions (MVP):** You (ember), Iron Pact (steel-blue), Ashen Horde (crimson), Unclaimed (wild/neutral).
+- **Name caution:** "Holdfast" collides with the FPS *Holdfast: Nations at War* — discovery/trademark risk worth checking before heavy brand investment.
+
+## Origin & framing
+
+Emerged from researching real limitations of Hermes Agent (Nous Research). Key realization that shaped everything:
+
+- Some agent problems **cannot be fixed by infrastructure** — chiefly that for LLMs, "rules are suggestions, not laws." Compliance is probabilistic, not deterministic.
+- Therefore the only safe way to let an agent touch value is to **move enforcement of economic outcomes OUT of the agent** into a deterministic layer it cannot violate even if jailbroken.
+
+Applied to a game: the GM (Hermes) provides narrative intelligence and persistent memory; the chain provides economic justice.
+
+## Why this is novel
+
+No existing on-chain game makes Hermes's distinctive properties the core mechanic:
+- **Learning loop** — GM builds a deepening model of players, adapts the world to collective behavior; no two worlds alike.
+- **Always-on (cron)** — the world ticks/evolves while everyone is offline.
+- **Persistent cross-session memory** — NPCs remember; consequences persist. The usual agent weakness (context amnesia) is inverted into the core feeling of a living place.
+
+Pure-contract autonomous worlds (Dark Forest, Sky Strife) have trustless settlement but no narrative intelligence/memory. Centralized servers have narrative but no true ownership. AI-GM narrative games (2026) are single-player, no economy/settlement. Holdfast + Base + Hermes is the unfilled intersection.
+
+## Core architectural principle (non-negotiable, recursive)
+
+**GM proposes, chain disposes** — at every layer.
+- **Chain = truth (deterministic):** ownership, balances, asset-transferring outcomes. Computed by the resolver, NOT the GM.
+- **GM = intent + narrative + memory (non-deterministic):** NL→intent, narration, relationship memory, AI faction moves. May hallucinate; structurally cannot grant what wasn't won.
+
+## Tick model (solves cost AND latency)
+
+Settlement is **per-tick, not per-action**.
+1. Players submit **intents** (signed, off-chain, free).
+2. GM interprets and responds narratively, instantly, from memory.
+3. At tick close, the resolver takes all intents + state + VRF seed → deterministic outcomes → **one settlement transaction** to Base.
+
+One tick = one tx per region. Players never pay per-action gas. The real limiter is latency/UX, not cost — players won't wait for block confirmation to talk to the GM.
+
+## Base cost reality (corrected)
+
+Realistic working number: **~$0.002–$0.01 per state-changing tx.** There is a floor (min base fee 0.005 gwei, post-Jovian) and a volatile L1 security-fee component. Base's low cost is an **enabler** for batched per-tick roots, not a license to settle arbitrarily. Design as if every settlement costs real money.
+
+## Three-bucket state model
+
+Determined by: **does this state become an input to deciding who-gets-what?**
+- **Bucket 1 — On-chain (per-tick settlement tx):** tile ownership, Flux balances/transfers, asset-transferring outcomes, VRF seed, per-tick state root.
+- **Bucket 2 — Off-chain but committed (hashed into the state root):** defense values/faction strength, AI faction positions, outcome-affecting reputation, payout-bound quest progress, player intents.
+- **Bucket 3 — Pure GM memory (never anchored):** narrative, dialogue, lore, relationship "color" without numbers.
+
+**Guardian rule:** the moment GM memory influences an outcome-determining number, it rises from Bucket 3 to Bucket 2 and must be committed. Prevents the non-deterministic GM from becoming the economic source of truth via a back door.
+
+**Trustless guarantee:** resolver deterministic; inputs fully reproducible from on-chain data (VRF seed, prior root) + published Bucket-2 state. Anyone can recompute a tick and get identical results → the GM cannot cheat.
+
+## Resolver math (the heart)
+
+Weighted-probabilistic (lottery with diminishing returns):
+```
+P_a = (F_a)^α × M_a              # attacker power
+P_d = (G_d)^α × M_d × δ          # defender power
+p   = P_a / (P_a + P_d)          # attacker win probability
+r   = VRF(seed, contest_id)      # drawn AFTER tick closes
+attacker wins iff r < p
+```
+- `F_a` committed Flux, `G_d` garrison, `M` modifiers (Bucket 2), `δ`≈1.3, `α` diminishing-returns exponent.
+- VRF drawn after tick close → players commit blind to randomness → no peeking, including by the GM.
+
+**Settlement / sink:**
+- Attacker wins: take tile; spoils `γ×G_d` to attacker, rest burned; `F_a` becomes new garrison.
+- Attacker loses: `β×F_a` to defender, rest burned.
+- Burn on both branches = deflationary sink; fiercer war = bigger burn = self-correcting economy.
+
+## The α parameter (most important tuning lever — a trade-off)
+
+- α<1 (e.g. 0.5): dominance expensive → upsets thrive, but nudges whales to split across many tiles (breadth not depth).
+- α=1: neutral to splitting, more deterministic, more whale-friendly per tile.
+- α>1: concentration → whales dominate single tiles.
+No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune from real data.
+
+## What is proven (empirically, in the sim)
+
+`sim/resolver.py`: even fight 100v100 → 43.5%; ~676 Flux (≈7×) for 2:1 dominance; whale-split trade-off confirmed at α=0.5; reproducibility (identical inputs→outputs); Monte Carlo (20k) win-rate matches theoretical p (VRF unbiased); one tick = one settlement; burn accounting works.
+
+`sim/world_sim.py` (6-tick): emergent drama with zero narrative (a player overextended, nearly bankrupted, then had attacks rejected for insufficient balance); AI factions feel intentional (aggressive raiders vs cautious south); economy deflationary while active (~623 burned vs ~576 emission); an emergent "cursed tile" (attacked 5 ticks, never fell, garrison hardened each time).
+
+**Verdict:** the mechanical skeleton produces pull even without narrative. Hermes narration will multiply something already alive.
+
+## What is NOT proven (honest)
+
+- Sim uses fixed seeds + scripted players. Real players may find balance-breaking strategies (collusion, defensive/garrison exploits). Only human playtest answers this.
+- No Solidity contract exists; on-chain parity of resolver math untested.
+- No Hermes integration; NL→intent quality unvalidated; cron reliability untested at scale.
+- Dispute/fraud-proof layer deferred.
+
+## Surfaces & UI decisions
+
+- **Primary surface: Telegram/Discord bot** (`@HoldfastGM`). Players play in natural language. The GM reads intent, not menus.
+- **Companion: web, read-only.** Map / holdings / standings / war log. Draws state only; all actions route to the bot. Chosen aesthetic direction: **illustrative island world map** (`ui/holdfast-isles.html`) — floating islands on a textured sea with depth (2.5D via cast shadows, bobbing, volumetric cliffs). Lightweight, instant, fantasy-map warmth.
+- **Tech: web-native, no Godot** (ADR-002). 2D first (SVG/Canvas; PixiJS if needed); three.js + low-poly islands as an optional later "hero map." `ui/holdfast-companion-iso.html` is an isometric Canvas engine scaffold ready to receive Kenney sprites.
+- **Assets:** Kenney.nl (CC0) is the safe commercial source (no attribution required); itch.io packs vary per-license (prefer explicit commercial; avoid CC-BY-NC). Keep a credits file regardless; avoid trademarked styles.
+
+## Brand
+
+- Mark: **Bastion** — an "H" monogram whose piers are fortified towers with chamfered (star-fort) shoulders and an ember gate. Token/app icon form.
+- Palette (flat, no gradients): Obsidian #0E131A/#11161D, Iron #1A212B, Steel #6B7A8D, Bone #ECE6D8, Ember #E8622C (the single loud accent — spent once), Gold #D9A23E (rare states only).
+- Tagline: "HOLD WHAT IS YOURS."
+- Files in `brand/`.
+
+## Scaling (see ADR-001)
+
+Decision: **independent continents as scale-out shards**, unified by a narrative (and optionally economic) layer — NOT by shared mechanical conflict. Players are locked to their continent (no cross-continent attack/migration), which eliminates cross-boundary actions, cross-shard memory, and the global sync barrier; each continent settles independently and in parallel (failure isolated per continent). The optional hierarchical GM (sub-GM per continent → Main GM narrative summary) follows the same recursive "GM proposes, chain disposes" rule — summaries are flavor only.
+
+**Open question (unresolved):** *what stays global to make "one world" feel honest?* Candidates safest→riskiest: global leaderboard/prestige (recommended start), global economy/single Flux (reintroduces cross-shard economics — defer), world/seasonal events (deterministic). MVP: leaderboard + Main-GM narrative only.
+
+## Economy health rule
+
+Sink (actions + burn + GM-compute fee) must be ≥ emission (tile yield), or it's a slow ponzi. GM compute is real cost; metering it in Flux gives the token a cost basis — mandatory at scale, not cosmetic. Win-win: players who build the world earn; protocol takes a fee on throughput; token value tracks activity, not hype. (Cautionary precedent: web3 games that were financial-products-first collapsed when token prices dropped — Holdfast must be fun without the token.)
+
+## Owner context
+
+- Handle: biglionaire. Indonesia. Windows/WSL2.
+- Strong smart-contract security auditor (EVM/Base). Write/review contracts at audit grade; settlement contract holds funds → highest scrutiny.
+- Prefers restrained, professional tone over hype.
+- Pattern noted in-session: many strong project starts; the differentiator is finishing one. Holdfast's value is execution to a playable MVP, not more ideas.

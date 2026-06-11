@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Holdfast — Telegram</title>
+<style>
+  :root{
+    --bg:#0E141B; --header:#17212B; --in:#1B2733; --out:#3A2A1E; --out-edge:#E8622C;
+    --bone:#ECE6D8; --steel:#7A8895; --ember:#E8622C; --gold:#D9A23E; --slate:#2A3641;
+    --kbd:#202B36; --kbd-h:#26323d;
+    --sans:'Helvetica Neue',Arial,sans-serif; --mono:ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#05080c;font-family:var(--sans);min-height:100vh;display:flex;
+    align-items:center;justify-content:center;padding:18px}
+  .phone{width:100%;max-width:392px;height:min(800px,94vh);background:var(--bg);
+    border-radius:30px;overflow:hidden;display:flex;flex-direction:column;
+    border:1px solid #1c2630;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+
+  /* header */
+  .top{background:var(--header);padding:12px 14px;display:flex;align-items:center;gap:11px;
+    border-bottom:1px solid #0c1218;z-index:2}
+  .back{color:var(--steel);font-size:20px;line-height:1}
+  .av{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:0 0 40px;background:#11161D;
+    display:flex;align-items:center;justify-content:center}
+  .av svg{width:40px;height:40px}
+  .who{flex:1;min-width:0}
+  .who .nm{font-weight:600;font-size:15px;color:var(--bone);display:flex;align-items:center;gap:6px}
+  .who .nm .badge{font-size:9px;background:#2a3641;color:var(--steel);padding:1px 5px;border-radius:4px;letter-spacing:.5px;font-weight:600}
+  .who .st{font-size:12px;color:var(--gold);margin-top:1px}
+  .menu{color:var(--steel);font-size:20px}
+
+  /* chat */
+  .chat{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:9px;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(40,55,70,.25), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(60,40,30,.18), transparent 45%),
+      var(--bg)}
+  .chat::-webkit-scrollbar{width:5px}.chat::-webkit-scrollbar-thumb{background:#2a3641;border-radius:3px}
+  .day{align-self:center;background:#1b2733;color:var(--steel);font-size:11px;
+    padding:3px 11px;border-radius:11px;margin:4px 0}
+
+  .row{display:flex;gap:7px;max-width:86%}
+  .row.in{align-self:flex-start}
+  .row.out{align-self:flex-end;flex-direction:row-reverse}
+  .mav{width:26px;height:26px;border-radius:50%;flex:0 0 26px;overflow:hidden;background:#11161D;align-self:flex-end}
+  .mav svg{width:26px;height:26px}
+  .bub{padding:8px 11px 6px;border-radius:14px;font-size:14.5px;line-height:1.42;position:relative}
+  .in .bub{background:var(--in);color:var(--bone);border-bottom-left-radius:5px}
+  .out .bub{background:var(--out);color:var(--bone);border-bottom-right-radius:5px;
+    box-shadow:inset 2px 0 0 var(--out-edge)}
+  .bub b{color:var(--bone)} .bub .em{color:var(--ember);font-weight:600}
+  .bub .gd{color:var(--gold);font-weight:600}
+  .tm{font-size:10px;color:var(--steel);float:right;margin:5px 0 -2px 8px}
+  .out .tm::after{content:' ✓✓';color:var(--ember)}
+
+  /* inline card */
+  .icard{background:#10171f;border:1px solid var(--slate);border-radius:10px;padding:10px 11px;margin-top:7px}
+  .icard .ch{display:flex;align-items:center;gap:9px}
+  .icard .hex{width:34px;height:34px;flex:0 0 34px}
+  .icard .ct{font-size:13px}
+  .icard .ct .t{font-weight:600;color:var(--bone)}
+  .icard .ct .s{font-size:11px;color:var(--steel)}
+  .odds{display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--slate)}
+  .odds .big{font-family:var(--mono);font-size:27px;font-weight:700;color:var(--ember);line-height:1}
+  .odds .om{font-size:10.5px;color:var(--steel);line-height:1.45}
+  .odds .om b{color:var(--bone);font-family:var(--mono)}
+  .bar{height:5px;border-radius:3px;background:#26323d;margin-top:8px;overflow:hidden}
+  .bar span{display:block;height:100%;background:var(--ember)}
+
+  /* inline keyboard */
+  .kb{display:flex;flex-direction:column;gap:5px;margin-top:7px}
+  .kbrow{display:flex;gap:5px}
+  .key{flex:1;background:var(--kbd);border:none;color:var(--bone);font-family:var(--sans);
+    font-size:13px;font-weight:500;padding:9px;border-radius:8px;cursor:pointer;transition:background .12s}
+  .key:hover{background:var(--kbd-h)}
+  .key.prim{background:#3a2a1e;box-shadow:inset 0 0 0 1px var(--ember);color:var(--ember);font-weight:600}
+  .key.prim:hover{background:#46311f}
+
+  /* typing */
+  .typing{align-self:flex-start;display:flex;gap:7px;align-items:flex-end}
+  .typing .bub{background:var(--in);padding:11px 13px}
+  .dots{display:flex;gap:4px}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--steel);animation:bl 1.2s infinite}
+  .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+  @keyframes bl{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+  /* input */
+  .chips{display:flex;gap:7px;overflow-x:auto;padding:8px 12px 4px;background:var(--bg)}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;background:#1b2733;border:1px solid var(--slate);color:var(--steel);
+    font-size:12.5px;padding:6px 12px;border-radius:14px;cursor:pointer;flex:0 0 auto}
+  .chip:hover{color:var(--bone);border-color:var(--steel)}
+  .input{display:flex;align-items:center;gap:10px;padding:9px 12px 12px;background:var(--header);
+    border-top:1px solid #0c1218}
+  .input input{flex:1;background:transparent;border:none;outline:none;color:var(--bone);
+    font-family:var(--sans);font-size:15px;padding:8px 4px}
+  .input input::placeholder{color:var(--steel)}
+  .send{width:40px;height:40px;border-radius:50%;border:none;background:var(--ember);
+    color:#fff;font-size:18px;cursor:pointer;flex:0 0 40px;display:flex;align-items:center;justify-content:center}
+  .send:hover{background:#f0703a}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="top">
+    <span class="back">‹</span>
+    <div class="av">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <rect width="240" height="240" fill="#11161D"/>
+        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
+        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
+        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
+        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#D9A23E"/>
+      </svg>
+    </div>
+    <div class="who">
+      <div class="nm">Holdfast GM <span class="badge">BOT</span></div>
+      <div class="st">Tick 24 · closes in 11h 58m</div>
+    </div>
+    <span class="menu">⋮</span>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="day">Today</div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div class="input">
+    <input id="inp" placeholder="Message the Game Master…" autocomplete="off"/>
+    <button class="send" id="send">➤</button>
+  </div>
+</div>
+
+<script>
+const ALPHA=0.5,DELTA=1.3;
+let balance=340, pending=[];
+const tiles={
+  '03':{owner:'Unclaimed',gar:60},'05':{owner:'Unclaimed',gar:65},'07':{owner:'Unclaimed',gar:55},
+  '04':{owner:'Iron Pact',gar:110},'09':{owner:'Iron Pact',gar:80},
+  '06':{owner:'Ashen Horde',gar:140},'08':{owner:'Ashen Horde',gar:100},
+};
+const yours=['01','02'];
+const chat=document.getElementById('chat');
+
+function hexSVG(stroke){return `<svg class="hex" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,6 70,23 70,57 40,74 10,57 10,23" fill="none" stroke="${stroke}" stroke-width="6" stroke-linejoin="round"/></svg>`;}
+function gmAv(){return `<div class="mav"><svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="240" fill="#11161D"/><path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/><path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/><rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/><path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#D9A23E"/></svg></div>`;}
+function now(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function scroll(){chat.scrollTop=chat.scrollHeight;}
+
+function out(html){
+  const r=document.createElement('div');r.className='row out';
+  r.innerHTML=`<div class="bub">${html}<span class="tm">${now()}</span></div>`;
+  chat.appendChild(r);scroll();
+}
+function inMsg(html,kb){
+  const r=document.createElement('div');r.className='row in';
+  r.innerHTML=gmAv()+`<div class="bub">${html}<span class="tm">${now()}</span>${kb||''}</div>`;
+  chat.appendChild(r);scroll();
+}
+function typing(cb){
+  const t=document.createElement('div');t.className='typing';
+  t.innerHTML=gmAv()+`<div class="bub"><div class="dots"><i></i><i></i><i></i></div></div>`;
+  chat.appendChild(t);scroll();
+  setTimeout(()=>{t.remove();cb();},900);
+}
+
+function power(f){return Math.pow(f,ALPHA);}
+function prob(c,g){const pa=power(c),pd=power(g)*DELTA;return{p:pa/(pa+pd),pa,pd};}
+
+function oddsCard(tile,commit){
+  const t=tiles[tile];const{p,pa,pd}=prob(commit,t.gar);
+  const col=t.owner==='Ashen Horde'?'#C0413B':t.owner==='Iron Pact'?'#5B8DB8':'#3C4654';
+  return `<div class="icard">
+    <div class="ch">${hexSVG(col)}<div class="ct"><div class="t">Tile ${tile} · ${t.owner}</div>
+      <div class="s">garrison ${t.gar} · your commit ${commit} Flux</div></div></div>
+    <div class="odds"><div class="big">${Math.round(p*100)}%</div>
+      <div class="om">win chance<br>your power <b>${pa.toFixed(1)}</b> · defense <b>${pd.toFixed(1)}</b></div></div>
+    <div class="bar"><span style="width:${p*100}%"></span></div>
+  </div>`;
+}
+function kb(rows){
+  return `<div class="kb">`+rows.map(r=>`<div class="kbrow">`+
+    r.map(b=>`<button class="key${b.prim?' prim':''}" data-act="${b.act}">${b.label}</button>`).join('')+
+    `</div>`).join('')+`</div>`;
+}
+
+function commitAssault(tile,commit){
+  if(commit>balance){inMsg(`You only hold <b>${balance} Flux</b> — not enough to commit ${commit}. Lower the commitment, commander.`);return;}
+  pending.push({tile,commit});balance-=commit;
+  document.querySelector('.who .st');
+  inMsg(`Assault committed. <span class="em">${commit} Flux</span> march on Tile ${tile} when the tick closes.<br><br>You have <b>${balance} Flux</b> in reserve and <b>${pending.length}</b> ${pending.length>1?'orders':'order'} pending.`,
+    kb([[{label:'⚔️ Plan another',act:'another'},{label:'⏱ Close tick now',act:'resolve',prim:true}]]));
+}
+
+function resolveTick(){
+  if(!pending.length){inMsg('No orders pending. Plan an assault first.');return;}
+  inMsg('Tick 24 closes. The region holds its breath…');
+  setTimeout(()=>{
+    pending.forEach(o=>{
+      const t=tiles[o.tile];const{p}=prob(o.commit,t.gar);const win=Math.random()<p;
+      if(win){const sp=Math.round(t.gar*0.5);balance+=sp;
+        inMsg(`<b class="em">Tile ${o.tile} falls.</b> Your assault broke the ${t.owner} (${Math.round(p*100)}% chance — won). You raise your banner and claim <b>${sp} Flux</b> in spoils. The chain has recorded it.`);
+        t.owner='you';t.gar=o.commit;yours.push(o.tile);}
+      else{inMsg(`<b style="color:#C0413B">Tile ${o.tile} holds.</b> The ${t.owner} repelled you (${Math.round(p*100)}% chance — lost). Your Flux is spent on their walls.`);}
+    });
+    pending=[];balance+=24;
+    setTimeout(()=>inMsg(`Dawn breaks on Tick 25. While you decide your next move, the Ashen Horde stirs in the east — they do not rest, and neither does the world.<br><br>You hold <span class="gd">${yours.length} tiles</span> and <b>${balance} Flux</b>.`,
+      kb([[{label:'🗺 Region status',act:'status'},{label:'🔭 Scout the east',act:'scout'}]])),700);
+  },700);
+}
+
+function holdings(){
+  inMsg(`<b>Your holdings, commander:</b><br>Tiles: <span class="gd">${yours.join(', ')}</span><br>Treasury: <span class="em">${balance} Flux</span><br>Pending orders: <b>${pending.length}</b><br><br>Enemy strongholds worth watching: Tile 06 (Ashen Horde, garrison 140 — a fortress now), Tile 04 (Iron Pact, 110).`,
+   kb([[{label:'⚔️ Take tile 6 with 120',act:'demo6'},{label:'🔭 Scout tile 8',act:'scout8'}]]));
+}
+function scout(tile){
+  const t=tiles[tile]||tiles['08'];const id=tiles[tile]?tile:'08';
+  inMsg(`<b>Scouts report on Tile ${id}:</b><br>Held by the ${t.owner}, garrison <b>${t.gar}</b>. ${t.gar>120?'Heavily fortified — each failed assault has only hardened it.':'Lightly held — an opening, if you move soon.'}<br><br>Tell me how much Flux to commit and I'll show your odds.`);
+}
+
+function interpret(text){
+  const low=text.toLowerCase();
+  if(/holding|status|my tiles|treasur/.test(low)){typing(holdings);return;}
+  if(/scout/.test(low)){const m=low.match(/(\d{1,2})/);typing(()=>scout(m?m[1].padStart(2,'0'):'08'));return;}
+  const tileM=low.match(/tile\s*0?(\d)/)||low.match(/\bt0?(\d)\b/);
+  if(tileM){
+    const tile=tileM[1].padStart(2,'0');
+    if(!tiles[tile]){typing(()=>inMsg(`Tile ${tile} is either yours already or beyond this region. Pick an enemy or unclaimed tile.`));return;}
+    const nums=(low.match(/\d{2,4}/g)||[]).map(Number).filter(n=>n>=20);
+    const commit=nums.length?nums[0]:120;
+    typing(()=>inMsg(`Understood — you mean to take <b>Tile ${tile}</b> from the ${tiles[tile].owner}, committing <span class="em">${commit} Flux</span>. Here is how the odds stand:`+oddsCard(tile,commit),
+      kb([[{label:`⚔️ Commit ${commit}`,act:`commit:${tile}:${commit}`,prim:true}],
+          [{label:'✏️ 100',act:`adj:${tile}:100`},{label:'160',act:`adj:${tile}:160`},{label:'220',act:`adj:${tile}:220`}]]));
+    });
+    return;
+  }
+  typing(()=>inMsg(`I read intent, not menus — just tell me what you want. For example:<br><br>· <i>"take tile 6 with 120"</i><br>· <i>"scout tile 8"</i><br>· <i>"my holdings"</i>`));
+}
+
+document.addEventListener('click',e=>{
+  const k=e.target.closest('.key, .chip');if(!k)return;
+  const act=k.dataset.act;
+  if(k.classList.contains('chip')){out(k.textContent);interpret(k.textContent);return;}
+  if(act==='resolve')resolveTick();
+  else if(act==='another')inMsg('Name your target. Try: <i>"take tile 4 with 140"</i>.');
+  else if(act==='status')typing(holdings);
+  else if(act==='scout'||act==='scout8')typing(()=>scout('08'));
+  else if(act==='demo6'){out('Take tile 6 with 120');interpret('take tile 6 with 120');}
+  else if(act.startsWith('commit:')){const[,t,c]=act.split(':');out(`Commit ${c} Flux → Tile ${t}`);typing(()=>commitAssault(t,+c));}
+  else if(act.startsWith('adj:')){const[,t,c]=act.split(':');out(`Make it ${c}`);typing(()=>inMsg(`Adjusted to <span class="em">${c} Flux</span> on Tile ${t}:`+oddsCard(t,+c),kb([[{label:`⚔️ Commit ${c}`,act:`commit:${t}:${c}`,prim:true}]])));}
+});
+
+function send(){const v=document.getElementById('inp').value.trim();if(!v)return;
+  out(v);document.getElementById('inp').value='';interpret(v);}
+document.getElementById('send').onclick=send;
+document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+// suggested chips
+const chipBox=document.getElementById('chips');
+['Take tile 6 with 120','My holdings','Scout tile 8','Take tile 5 with 90'].forEach(c=>{
+  const el=document.createElement('div');el.className='chip';el.dataset.act='chip';el.textContent=c;chipBox.appendChild(el);
+});
+
+// opening: the overnight briefing — the "living world" moment
+setTimeout(()=>inMsg(`Good morning, commander. <b>While you slept, the world moved.</b><br><br>The Ashen Horde took an unclaimed ridge to the east and now presses your border. Tile 06 has grown into a fortress — garrison <b>140</b> — every assault repelled has only thickened its walls.<br><br>Iron Pact has gone quiet. You hold <span class="gd">2 tiles</span> and <span class="em">340 Flux</span>. The next tick closes in 11 hours.<br><br>What's your move?`,
+  kb([[{label:'🗺 Region status',act:'status'},{label:'🔭 Scout the front',act:'scout'}]])),500);
+</script>
+</body>
+</html>

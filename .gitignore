@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node (for the future bot/indexer)
+node_modules/
+dist/
+
+# Foundry (for the future contracts/)
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Secrets — never commit keys (see CLAUDE.md)
+.env
+.env.*
+*.key

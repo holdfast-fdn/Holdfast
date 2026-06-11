@@ -1,0 +1,19 @@
+<svg width="620" height="150" viewBox="0 0 620 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Holdfast wordmark">
+  <rect width="620" height="150" fill="#11161D"/>
+
+  <!-- compact refined mark -->
+  <g transform="translate(40,38)">
+    <path d="M11 38 L21 28 L29 28 L29 74 L11 74 Z" fill="#ECE6D8"/>
+    <path d="M51 28 L59 28 L69 38 L69 74 L51 74 Z" fill="#ECE6D8"/>
+    <rect x="29" y="45" width="22" height="15" fill="#ECE6D8"/>
+    <path d="M33 60 L33 52 Q33 47 40 47 Q47 47 47 52 L47 60 Z" fill="#E8622C"/>
+  </g>
+
+  <!-- wordmark: one color, tight pro tracking; ember carried by the mark only -->
+  <text x="128" y="92" font-family="'Helvetica Neue','Arial',sans-serif"
+        font-weight="800" font-size="56" letter-spacing="-1" fill="#ECE6D8">HOLDFAST</text>
+  <!-- thin ember keystone tick: subtle tie to the mark -->
+  <rect x="129" y="106" width="26" height="3" fill="#E8622C"/>
+  <text x="162" y="112" font-family="'Helvetica Neue','Arial',sans-serif"
+        font-weight="500" font-size="13" letter-spacing="6" fill="#6B7A8D">HOLD WHAT IS YOURS</text>
+</svg>

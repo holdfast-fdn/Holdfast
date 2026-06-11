@@ -1,0 +1,6 @@
+# Normalize line endings: LF in repo, native checkout left to git defaults
+* text=auto eol=lf
+*.svg text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.html text eol=lf

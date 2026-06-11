@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Holdfast — Brand System</title>
+<style>
+  :root{--obsidian:#11161D;--iron:#1A212B;--slate:#29323F;--steel:#6B7A8D;--bone:#ECE6D8;--ember:#E8622C;--gold:#D9A23E}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--obsidian);color:var(--bone);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.55;padding:48px 22px}
+  .wrap{max-width:780px;margin:0 auto}
+  .top{display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--slate);padding-bottom:24px}
+  .top svg{width:72px;height:72px}
+  .top h1{font-weight:800;font-size:30px;letter-spacing:-0.5px}
+  .top .t{color:var(--steel);font-size:11px;letter-spacing:5px;margin-top:4px}
+  h2{font-size:11px;letter-spacing:3px;color:var(--steel);text-transform:uppercase;margin:44px 0 18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--iron);border:1px solid var(--slate);border-radius:14px;padding:26px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .card svg{width:128px;height:128px}
+  .lbl{font-size:11px;color:var(--steel);letter-spacing:1.5px}
+  .light{background:var(--bone)} .light .lbl{color:var(--slate)}
+  .full{grid-column:1/-1}
+  .full svg{width:100%;height:auto;max-width:460px}
+  .pal{display:flex;gap:10px;flex-wrap:wrap}
+  .sw{flex:1;min-width:96px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+  .sw .chip{height:56px} .sw .meta{padding:8px 10px;font-size:11px;color:var(--steel);background:var(--iron)}
+  .sw .meta b{color:var(--bone);font-weight:600;display:block;letter-spacing:.5px}
+  .note{color:var(--steel);font-size:13.5px;margin-top:14px}
+  .gridlines{stroke:#2E3A49;stroke-width:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="8" width="224" height="224" rx="46" fill="#11161D"/>
+      <rect x="8.75" y="8.75" width="222.5" height="222.5" rx="45.25" fill="none" stroke="#29323F" stroke-width="1.5"/>
+      <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
+      <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
+      <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
+      <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
+    </svg>
+    <div><h1>Holdfast</h1><div class="t">HOLD WHAT IS YOURS</div></div>
+  </div>
+
+  <h2>Primary mark</h2>
+  <div class="grid">
+    <div class="card">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="8" width="224" height="224" rx="46" fill="#11161D"/>
+        <rect x="8.75" y="8.75" width="222.5" height="222.5" rx="45.25" fill="none" stroke="#29323F" stroke-width="1.5"/>
+        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
+        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
+        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
+        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
+      </svg>
+      <div class="lbl">TOKEN / APP ICON</div>
+    </div>
+    <div class="card">
+      <!-- construction grid -->
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="8" width="224" height="224" rx="46" fill="#11161D"/>
+        <g class="gridlines" opacity="0.5">
+          <line x1="62" y1="20" x2="62" y2="220"/><line x1="98" y1="20" x2="98" y2="220"/>
+          <line x1="142" y1="20" x2="142" y2="220"/><line x1="178" y1="20" x2="178" y2="220"/>
+          <line x1="20" y1="58" x2="220" y2="58"/><line x1="20" y1="104" x2="220" y2="104"/>
+          <line x1="20" y1="138" x2="220" y2="138"/><line x1="20" y1="184" x2="220" y2="184"/>
+        </g>
+        <g opacity="0.9">
+          <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="none" stroke="#ECE6D8" stroke-width="1.5"/>
+          <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="none" stroke="#ECE6D8" stroke-width="1.5"/>
+          <rect x="98" y="104" width="44" height="34" fill="none" stroke="#ECE6D8" stroke-width="1.5"/>
+          <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="none" stroke="#E8622C" stroke-width="1.5"/>
+        </g>
+      </svg>
+      <div class="lbl">CONSTRUCTION</div>
+    </div>
+  </div>
+
+  <h2>Wordmark</h2>
+  <div class="grid"><div class="card full">
+    <svg viewBox="0 0 620 150" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(40,38)">
+        <path d="M11 38 L21 28 L29 28 L29 74 L11 74 Z" fill="#ECE6D8"/>
+        <path d="M51 28 L59 28 L69 38 L69 74 L51 74 Z" fill="#ECE6D8"/>
+        <rect x="29" y="45" width="22" height="15" fill="#ECE6D8"/>
+        <path d="M33 60 L33 52 Q33 47 40 47 Q47 47 47 52 L47 60 Z" fill="#E8622C"/>
+      </g>
+      <text x="128" y="92" font-family="'Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="56" letter-spacing="-1" fill="#ECE6D8">HOLDFAST</text>
+      <rect x="129" y="106" width="26" height="3" fill="#E8622C"/>
+      <text x="162" y="112" font-family="'Helvetica Neue',Arial,sans-serif" font-weight="500" font-size="13" letter-spacing="6" fill="#6B7A8D">HOLD WHAT IS YOURS</text>
+    </svg>
+  </div></div>
+
+  <h2>On light · single-color</h2>
+  <div class="grid">
+    <div class="card light">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#11161D"/>
+        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#11161D"/>
+        <rect x="98" y="104" width="44" height="34" fill="#11161D"/>
+        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#E8622C"/>
+      </svg>
+      <div class="lbl">ON LIGHT</div>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
+        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
+        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
+        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#ECE6D8"/>
+      </svg>
+      <div class="lbl">MONOCHROME STAMP</div>
+    </div>
+  </div>
+
+  <h2>Palette</h2>
+  <div class="pal">
+    <div class="sw"><div class="chip" style="background:#11161D"></div><div class="meta"><b>Obsidian</b>#11161D</div></div>
+    <div class="sw"><div class="chip" style="background:#1A212B"></div><div class="meta"><b>Iron</b>#1A212B</div></div>
+    <div class="sw"><div class="chip" style="background:#6B7A8D"></div><div class="meta"><b>Steel</b>#6B7A8D</div></div>
+    <div class="sw"><div class="chip" style="background:#ECE6D8"></div><div class="meta"><b>Bone</b>#ECE6D8</div></div>
+    <div class="sw"><div class="chip" style="background:#E8622C"></div><div class="meta"><b>Ember</b>#E8622C</div></div>
+    <div class="sw"><div class="chip" style="background:#D9A23E"></div><div class="meta"><b>Gold</b>#D9A23E</div></div>
+  </div>
+  <p class="note">Flat color, no gradients. Ember appears once — the gate. Gold is reserved for rare states (victory, hegemony). The angled pier shoulders reference star-fort bastion walls, not toy battlements — abstract enough to scale to a 16px favicon.</p>
+</div>
+</body>
+</html>
