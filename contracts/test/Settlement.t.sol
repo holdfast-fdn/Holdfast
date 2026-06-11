@@ -41,21 +41,11 @@ contract SettlementTest is Test {
         garrisons[3] = 100 * WAD;
         st.createRegion(REGION, _params(), owners, garrisons, mods);
 
-        // fund players: prank the settlement (the sole minter) — test-only;
-        // production onboarding is an open design item (see ROADMAP)
-        vm.startPrank(address(st));
-        flux.mint(alice, 250 * WAD);
-        flux.mint(bob, 250 * WAD);
-        vm.stopPrank();
-
-        vm.startPrank(alice);
-        flux.approve(address(st), type(uint256).max);
-        st.deposit(250 * WAD);
-        vm.stopPrank();
-        vm.startPrank(bob);
-        flux.approve(address(st), type(uint256).max);
-        st.deposit(250 * WAD);
-        vm.stopPrank();
+        // fund players through the testnet onboarding path
+        address[] memory players = new address[](2);
+        players[0] = alice;
+        players[1] = bob;
+        st.enroll(players, 250 * WAD);
     }
 
     function _params() internal pure returns (HoldfastSettlement.RegionParams memory) {
@@ -131,6 +121,25 @@ contract SettlementTest is Test {
         vm.expectRevert(HoldfastSettlement.NotOwner.selector);
         st.createRegion(1, _params(), o, g, m);
         vm.stopPrank();
+    }
+
+    function test_enroll_only_owner_and_mints_into_escrow() public {
+        address[] memory ps = new address[](1);
+        ps[0] = mallory;
+        vm.prank(mallory);
+        vm.expectRevert(HoldfastSettlement.NotOwner.selector);
+        st.enroll(ps, 1000 * WAD);
+
+        uint256 supplyBefore = flux.totalSupply();
+        st.enroll(ps, 100 * WAD);
+        assertEq(st.escrow(mallory), 100 * WAD);
+        assertEq(flux.totalSupply(), supplyBefore + 100 * WAD);
+        _assertSolvent();
+
+        // enrolled escrow is real, withdrawable Flux
+        vm.prank(mallory);
+        st.withdraw(100 * WAD);
+        assertEq(flux.balanceOf(mallory), 100 * WAD);
     }
 
     function test_only_operator_settles() public {

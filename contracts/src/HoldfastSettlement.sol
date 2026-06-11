@@ -71,6 +71,7 @@ contract HoldfastSettlement {
 
     event Deposited(address indexed player, uint256 amount);
     event Withdrawn(address indexed player, uint256 amount);
+    event Enrolled(address indexed player, uint256 startingEscrow);
     event RegionCreated(uint256 indexed regionId, uint64 tileCount);
     event OperatorSet(address indexed operator);
     event ContestSettled(
@@ -157,6 +158,25 @@ contract HoldfastSettlement {
         }
         if (minted > 0) flux.mint(address(this), minted);
         emit RegionCreated(regionId, tileCount);
+    }
+
+    /// @notice TESTNET onboarding: the owner credits starting escrow to new
+    ///         players (minted supply). This is a deliberate centralized
+    ///         faucet for the Phase-4 closed playtest ONLY — any deployment
+    ///         where Flux carries value must replace it with a reviewed
+    ///         distribution (and clear it with counsel; see CLAUDE.md legal
+    ///         note). It cannot touch existing balances — only add new,
+    ///         publicly-evented supply.
+    function enroll(address[] calldata players, uint256 startingEscrow)
+        external
+    {
+        if (msg.sender != owner) revert NotOwner();
+        for (uint256 i = 0; i < players.length; i++) {
+            if (players[i] == address(0)) revert ZeroAddress();
+            escrow[players[i]] += startingEscrow;
+            emit Enrolled(players[i], startingEscrow);
+        }
+        flux.mint(address(this), players.length * startingEscrow);
     }
 
     // ------------------------------------------------------------------
