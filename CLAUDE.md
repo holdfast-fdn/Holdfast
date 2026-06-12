@@ -21,7 +21,7 @@ Operational guide for Claude Code working in this repository. Read this first, t
 - **Validated:** resolver math (`sim/resolver.py`) and a multi-tick world sim (`sim/world_sim.py`). Both run with `python3`. Economic loop, reproducibility, and VRF non-bias confirmed empirically.
 - **Designed, not built:** Solidity settlement + Flux token, Hermes GM integration, Telegram bot, indexer, production frontend.
 - **Brand:** v2 "The Herald" (`brand/`) — winged-anchor pixel emblem (master logo, owner-chosen), vector glyph for small sizes, gold-on-night palette, Hermes-messenger persona, pixel-art illustration style. Supersedes v1 bastion/ember.
-- **UI previews:** done (`ui/`) — Telegram (primary), illustrative isles companion, dashboard variant, isometric engine. NOTE: still on v1 brand; rework to v2 planned.
+- **UI previews:** primary surfaces on brand v2 (`ui/holdfast-telegram.html` — the Herald chat; `ui/holdfast-isles.html` — companion map). dashboard/iso/preview remain v1-era references, archived.
 
 ## Tech stack
 

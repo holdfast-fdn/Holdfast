@@ -129,7 +129,7 @@ No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune fro
 - **Type:** Cinzel (display — classical Roman capitals) + Inter (UI/body, tabular numbers).
 - **Taglines:** primary "THE WORLD MOVES WHILE YOU SLEEP."; legacy "HOLD WHAT IS YOURS." (war/season contexts); onboarding "SPEAK, AND THE GOD CARRIES IT."
 - **GM persona (the Herald):** messenger never judge (reports outcomes as delivered news); classical dry wit; proves its memory constantly (cites grudges by name and tick); compute fees framed as "the Herald's toll."
-- The crest/palette/persona survive a retitle if the "Holdfast" name collision ever forces one. Full sheet: `brand/holdfast-brand.html`. UI rework to match v2 is planned but not done.
+- The crest/palette/persona survive a retitle if the "Holdfast" name collision ever forces one. Full sheet: `brand/holdfast-brand.html`. UI: primary surfaces (telegram + isles) reworked to v2 — the Herald persona, gold-on-night, winged-anchor avatar/crest, signal-cyan Flux, War/Laurel state colors; dashboard/iso/preview left as archived v1-era references.
 
 ## Scaling (see ADR-001)
 

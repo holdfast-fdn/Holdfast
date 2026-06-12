@@ -3,13 +3,17 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Holdfast — Telegram</title>
+<title>Holdfast — @HoldfastGM (The Herald)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0E141B; --header:#17212B; --in:#1B2733; --out:#3A2A1E; --out-edge:#E8622C;
-    --bone:#ECE6D8; --steel:#7A8895; --ember:#E8622C; --gold:#D9A23E; --slate:#2A3641;
-    --kbd:#202B36; --kbd-h:#26323d;
-    --sans:'Helvetica Neue',Arial,sans-serif; --mono:ui-monospace,'SF Mono',Menlo,monospace;
+    --bg:#0B0E15; --header:#151B28; --in:#151B28; --out:#241D10; --out-edge:#D9A845;
+    --bone:#F1EEE4; --steel:#97A1B5; --ember:#D9A845; --gold:#D9A845; --slate:#232B3C;
+    --signal:#3FB8CE; --war:#E25D38; --laurel:#6FA876;
+    --kbd:#1B2230; --kbd-h:#222A3A;
+    --sans:'Inter','Helvetica Neue',Arial,sans-serif; --mono:ui-monospace,'SF Mono',Menlo,monospace;
+    --display:'Cinzel',serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:#05080c;font-family:var(--sans);min-height:100vh;display:flex;
@@ -26,9 +30,9 @@
     display:flex;align-items:center;justify-content:center}
   .av svg{width:40px;height:40px}
   .who{flex:1;min-width:0}
-  .who .nm{font-weight:600;font-size:15px;color:var(--bone);display:flex;align-items:center;gap:6px}
+  .who .nm{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:1px;color:var(--bone);display:flex;align-items:center;gap:6px}
   .who .nm .badge{font-size:9px;background:#2a3641;color:var(--steel);padding:1px 5px;border-radius:4px;letter-spacing:.5px;font-weight:600}
-  .who .st{font-size:12px;color:var(--gold);margin-top:1px}
+  .who .st{font-size:12px;color:var(--signal);margin-top:1px}
   .menu{color:var(--steel);font-size:20px}
 
   /* chat */
@@ -50,10 +54,11 @@
   .in .bub{background:var(--in);color:var(--bone);border-bottom-left-radius:5px}
   .out .bub{background:var(--out);color:var(--bone);border-bottom-right-radius:5px;
     box-shadow:inset 2px 0 0 var(--out-edge)}
-  .bub b{color:var(--bone)} .bub .em{color:var(--ember);font-weight:600}
+  .bub b{color:var(--bone)} .bub .em{color:var(--signal);font-weight:600}
+  .bub .win{color:var(--laurel);font-weight:600} .bub .loss{color:var(--war);font-weight:600}
   .bub .gd{color:var(--gold);font-weight:600}
   .tm{font-size:10px;color:var(--steel);float:right;margin:5px 0 -2px 8px}
-  .out .tm::after{content:' ✓✓';color:var(--ember)}
+  .out .tm::after{content:' ✓✓';color:var(--gold)}
 
   /* inline card */
   .icard{background:#10171f;border:1px solid var(--slate);border-radius:10px;padding:10px 11px;margin-top:7px}
@@ -63,11 +68,11 @@
   .icard .ct .t{font-weight:600;color:var(--bone)}
   .icard .ct .s{font-size:11px;color:var(--steel)}
   .odds{display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--slate)}
-  .odds .big{font-family:var(--mono);font-size:27px;font-weight:700;color:var(--ember);line-height:1}
+  .odds .big{font-family:var(--mono);font-size:27px;font-weight:700;color:var(--gold);line-height:1}
   .odds .om{font-size:10.5px;color:var(--steel);line-height:1.45}
   .odds .om b{color:var(--bone);font-family:var(--mono)}
   .bar{height:5px;border-radius:3px;background:#26323d;margin-top:8px;overflow:hidden}
-  .bar span{display:block;height:100%;background:var(--ember)}
+  .bar span{display:block;height:100%;background:var(--signal)}
 
   /* inline keyboard */
   .kb{display:flex;flex-direction:column;gap:5px;margin-top:7px}
@@ -75,8 +80,8 @@
   .key{flex:1;background:var(--kbd);border:none;color:var(--bone);font-family:var(--sans);
     font-size:13px;font-weight:500;padding:9px;border-radius:8px;cursor:pointer;transition:background .12s}
   .key:hover{background:var(--kbd-h)}
-  .key.prim{background:#3a2a1e;box-shadow:inset 0 0 0 1px var(--ember);color:var(--ember);font-weight:600}
-  .key.prim:hover{background:#46311f}
+  .key.prim{background:#241D10;box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold);font-weight:600}
+  .key.prim:hover{background:#2C2414}
 
   /* typing */
   .typing{align-self:flex-start;display:flex;gap:7px;align-items:flex-end}
@@ -97,9 +102,9 @@
   .input input{flex:1;background:transparent;border:none;outline:none;color:var(--bone);
     font-family:var(--sans);font-size:15px;padding:8px 4px}
   .input input::placeholder{color:var(--steel)}
-  .send{width:40px;height:40px;border-radius:50%;border:none;background:var(--ember);
-    color:#fff;font-size:18px;cursor:pointer;flex:0 0 40px;display:flex;align-items:center;justify-content:center}
-  .send:hover{background:#f0703a}
+  .send{width:40px;height:40px;border-radius:50%;border:none;background:var(--gold);
+    color:#11161F;font-size:18px;cursor:pointer;flex:0 0 40px;display:flex;align-items:center;justify-content:center}
+  .send:hover{background:#E5B658}
 </style>
 </head>
 <body>
@@ -107,16 +112,10 @@
   <div class="top">
     <span class="back">‹</span>
     <div class="av">
-      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-        <rect width="240" height="240" fill="#11161D"/>
-        <path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/>
-        <path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/>
-        <rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/>
-        <path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#D9A23E"/>
-      </svg>
+      <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" fill="#0B0E15"/><g fill="#D9A845"><polygon points="200,166 76,124 92,152 200,196"/><polygon points="200,206 100,164 114,192 200,234"/><polygon points="312,166 436,124 420,152 312,196"/><polygon points="312,206 412,164 398,192 312,234"/><circle cx="256" cy="84" r="30" fill="none" stroke="#D9A845" stroke-width="20"/><rect x="170" y="146" width="172" height="34" rx="6"/><rect x="150" y="140" width="24" height="46" rx="4"/><rect x="338" y="140" width="24" height="46" rx="4"/><rect x="240" y="150" width="32" height="190"/><polygon points="240,340 272,340 256,392"/><path d="M132 296 Q256 432 380 296 L348 272 Q256 376 164 272 Z"/><polygon points="132,300 112,244 168,262"/><polygon points="380,300 400,244 344,262"/></g></svg>
     </div>
     <div class="who">
-      <div class="nm">Holdfast GM <span class="badge">BOT</span></div>
+      <div class="nm">The Herald <span class="badge">@HoldfastGM</span></div>
       <div class="st">Tick 24 · closes in 11h 58m</div>
     </div>
     <span class="menu">⋮</span>
@@ -128,7 +127,7 @@
 
   <div class="chips" id="chips"></div>
   <div class="input">
-    <input id="inp" placeholder="Message the Game Master…" autocomplete="off"/>
+    <input id="inp" placeholder="Speak, and the god carries it…" autocomplete="off"/>
     <button class="send" id="send">➤</button>
   </div>
 </div>
@@ -145,7 +144,7 @@ const yours=['01','02'];
 const chat=document.getElementById('chat');
 
 function hexSVG(stroke){return `<svg class="hex" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,6 70,23 70,57 40,74 10,57 10,23" fill="none" stroke="${stroke}" stroke-width="6" stroke-linejoin="round"/></svg>`;}
-function gmAv(){return `<div class="mav"><svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="240" fill="#11161D"/><path d="M62 78 L82 58 L98 58 L98 184 L62 184 Z" fill="#ECE6D8"/><path d="M142 58 L158 58 L178 78 L178 184 L142 184 Z" fill="#ECE6D8"/><rect x="98" y="104" width="44" height="34" fill="#ECE6D8"/><path d="M107 138 L107 120 Q107 109 120 109 Q133 109 133 120 L133 138 Z" fill="#D9A23E"/></svg></div>`;}
+function gmAv(){return `<div class="mav"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" fill="#0B0E15"/><g fill="#D9A845"><polygon points="200,166 76,124 92,152 200,196"/><polygon points="200,206 100,164 114,192 200,234"/><polygon points="312,166 436,124 420,152 312,196"/><polygon points="312,206 412,164 398,192 312,234"/><circle cx="256" cy="84" r="30" fill="none" stroke="#D9A845" stroke-width="20"/><rect x="170" y="146" width="172" height="34" rx="6"/><rect x="150" y="140" width="24" height="46" rx="4"/><rect x="338" y="140" width="24" height="46" rx="4"/><rect x="240" y="150" width="32" height="190"/><polygon points="240,340 272,340 256,392"/><path d="M132 296 Q256 432 380 296 L348 272 Q256 376 164 272 Z"/><polygon points="132,300 112,244 168,262"/><polygon points="380,300 400,244 344,262"/></g></svg></div>`;}
 function now(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function scroll(){chat.scrollTop=chat.scrollHeight;}
 
@@ -171,7 +170,7 @@ function prob(c,g){const pa=power(c),pd=power(g)*DELTA;return{p:pa/(pa+pd),pa,pd
 
 function oddsCard(tile,commit){
   const t=tiles[tile];const{p,pa,pd}=prob(commit,t.gar);
-  const col=t.owner==='Ashen Horde'?'#C0413B':t.owner==='Iron Pact'?'#5B8DB8':'#3C4654';
+  const col=t.owner==='Ashen Horde'?'#E25D38':t.owner==='Iron Pact'?'#5B8DB8':'#3C4654';
   return `<div class="icard">
     <div class="ch">${hexSVG(col)}<div class="ct"><div class="t">Tile ${tile} · ${t.owner}</div>
       <div class="s">garrison ${t.gar} · your commit ${commit} Flux</div></div></div>
@@ -201,9 +200,9 @@ function resolveTick(){
     pending.forEach(o=>{
       const t=tiles[o.tile];const{p}=prob(o.commit,t.gar);const win=Math.random()<p;
       if(win){const sp=Math.round(t.gar*0.5);balance+=sp;
-        inMsg(`<b class="em">Tile ${o.tile} falls.</b> Your assault broke the ${t.owner} (${Math.round(p*100)}% chance — won). You raise your banner and claim <b>${sp} Flux</b> in spoils. The chain has recorded it.`);
+        inMsg(`<b class="win">Tile ${o.tile} falls.</b> Your assault broke the ${t.owner} (${Math.round(p*100)}% chance — won). You raise your banner and claim <b>${sp} Flux</b> in spoils. The chain has recorded it.`);
         t.owner='you';t.gar=o.commit;yours.push(o.tile);}
-      else{inMsg(`<b style="color:#C0413B">Tile ${o.tile} holds.</b> The ${t.owner} repelled you (${Math.round(p*100)}% chance — lost). Your Flux is spent on their walls.`);}
+      else{inMsg(`<b class="loss">Tile ${o.tile} holds.</b> The ${t.owner} repelled you (${Math.round(p*100)}% chance — lost). Your Flux is spent on their walls.`);}
     });
     pending=[];balance+=24;
     setTimeout(()=>inMsg(`Dawn breaks on Tick 25. While you decide your next move, the Ashen Horde stirs in the east — they do not rest, and neither does the world.<br><br>You hold <span class="gd">${yours.length} tiles</span> and <b>${balance} Flux</b>.`,

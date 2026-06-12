@@ -45,11 +45,11 @@ holdfast/
 │   ├── holdfast-wordmark.svg
 │   └── flux-token.svg        # token icon — the Winged Drachma
 └── ui/
-    ├── holdfast-telegram.html        # PRIMARY surface: NL + GM chat (interactive)
-    ├── holdfast-isles.html           # web companion: illustrative island map (read-only)
-    ├── holdfast-dashboard.html       # web companion: immersive HUD variant
-    ├── holdfast-companion-iso.html   # isometric map engine (Kenney-asset ready)
-    └── holdfast-preview.html         # early interactive web preview (archived)
+    ├── holdfast-telegram.html        # PRIMARY surface: the Herald chat (interactive, brand v2)
+    ├── holdfast-isles.html           # web companion: illustrative island map (read-only, brand v2)
+    ├── holdfast-dashboard.html       # ARCHIVED v1-era HUD variant (reference only)
+    ├── holdfast-companion-iso.html   # isometric engine scaffold (v1-era, Kenney-asset ready)
+    └── holdfast-preview.html         # ARCHIVED early preview (v1-era)
 ```
 
 ## Stack
