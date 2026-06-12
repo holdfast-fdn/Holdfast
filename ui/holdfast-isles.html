@@ -136,15 +136,15 @@ const FCOL={you:'#D9A845','Iron Pact':'#5B8DB8','Ashen Horde':'#E25D38',Unclaime
 // dry unclaimed badlands. The map reads the war at a glance.
 const BIOME={you:'lush','Iron Pact':'snow','Ashen Horde':'volcano',Unclaimed:'desert'};
 const tiles=[
-  {id:'01',owner:'you',gar:120,since:19,last:'You took it from Iron Pact',x:195,y:165,s:1.0,sh:0},
-  {id:'02',owner:'you',gar:95,since:12,last:'Held against an Ashen assault',x:120,y:375,s:.82,sh:1},
-  {id:'03',owner:'Unclaimed',gar:60,since:null,last:'Open ground — never claimed',x:415,y:88,s:.74,sh:2},
-  {id:'04',owner:'Iron Pact',gar:110,since:15,last:'Iron Pact reinforced, +30',x:470,y:265,s:.95,sh:1},
+  {id:'01',owner:'you',gar:120,since:19,last:'You took it from Iron Pact',x:195,y:185,s:1.0,sh:0,ta:[0.33,0.62]},
+  {id:'02',owner:'you',gar:95,since:12,last:'Held against an Ashen assault',x:120,y:375,s:.82,sh:1,ta:[0.40,0.16]},
+  {id:'03',owner:'Unclaimed',gar:60,since:null,last:'Open ground — never claimed',x:415,y:118,s:.74,sh:2},
+  {id:'04',owner:'Iron Pact',gar:110,since:15,last:'Iron Pact reinforced, +30',x:470,y:265,s:.95,sh:1,ta:[0.55,0.66]},
   {id:'05',owner:'Unclaimed',gar:65,since:null,last:'Contested twice, never taken',x:295,y:330,s:.7,sh:0},
-  {id:'06',owner:'Ashen Horde',gar:140,since:20,last:'Three assaults repelled',x:628,y:132,s:1.05,sh:2},
+  {id:'06',owner:'Ashen Horde',gar:140,since:20,last:'Three assaults repelled',x:628,y:158,s:1.05,sh:2,ta:[0.47,0.44]},
   {id:'07',owner:'Unclaimed',gar:55,since:null,last:'Open ground, eastern edge',x:540,y:455,s:.68,sh:1},
-  {id:'08',owner:'Ashen Horde',gar:100,since:17,last:'Ashen Horde captured it',x:705,y:345,s:.88,sh:0},
-  {id:'09',owner:'Iron Pact',gar:80,since:14,last:'Light Iron Pact outpost',x:400,y:470,s:.78,sh:2},
+  {id:'08',owner:'Ashen Horde',gar:100,since:17,last:'Ashen Horde captured it',x:705,y:345,s:.88,sh:0,ta:[0.62,0.52]},
+  {id:'09',owner:'Iron Pact',gar:80,since:14,last:'Light Iron Pact outpost',x:400,y:470,s:.78,sh:2,ta:[0.38,0.63]},
 ];
 const blobs=[
   "M-52,-4 C-54,-26 -30,-40 -6,-35 C18,-40 46,-30 52,-6 C58,16 40,36 12,38 C-14,42 -44,30 -52,-4 Z",
@@ -343,21 +343,28 @@ function drawIslands(){
 
     if(useSprite){
       const W=SPRITE_W,H=W*sp.h/sp.w;
-      // held isles raise a mage tower; the variant tracks the garrison tier
+      const topY=-H*0.45;
+      // held isles raise a mage tower at a hand-picked ground anchor;
+      // the variant tracks the garrison tier
       let tower='';
-      if(t.owner!=='Unclaimed'){
+      if(t.owner!=='Unclaimed'&&t.ta){
         const ta=TOWER_ART[towerTier(t.gar)-1];const ts=sprites[ta];
         if(ts&&ts.ok){
-          const Tw=W*0.20,Th=Tw*ts.h/ts.w;
-          tower='<image href="'+ta+'" x="'+(W*0.10-Tw/2)+'" y="'+(-Th-W*0.02)+'" width="'+Tw+'" height="'+Th+'"/>';
+          const Tw=W*0.17,Th=Tw*ts.h/ts.w;
+          const bx=(t.ta[0]-0.5)*W, by=topY+t.ta[1]*H;
+          tower='<image href="'+ta+'" x="'+(bx-Tw/2)+'" y="'+(by-Th+2)+'" width="'+Tw+'" height="'+Th+'"/>';
         }
       }
+      // no rings: name + score float ABOVE the isle; selection = glow
+      if(selected===i){
+        inner.style.filter='brightness(1.12) drop-shadow(0 0 12px rgba(255,255,255,.65))';
+      }
       inner.innerHTML=
-        (selected===i?'<ellipse cx="0" cy="6" rx="'+(W*.36)+'" ry="'+(W*.13)+'" fill="none" stroke="#FFFFFF" stroke-width="3.5" filter="url(#glow)" style="animation:ping 1.7s ease-out infinite"/>':'')+
-        '<image href="'+art+'" x="'+(-W/2)+'" y="'+(-H*0.45)+'" width="'+W+'" height="'+H+'"/>'+
+        '<image href="'+art+'" x="'+(-W/2)+'" y="'+topY+'" width="'+W+'" height="'+H+'"/>'+
         tower+
-        '<ellipse cx="0" cy="6" rx="'+(W*.36)+'" ry="'+(W*.13)+'" fill="none" stroke="'+col+'" stroke-width="'+(selected===i?3.5:2)+'" opacity=".85"/>'+
-        overlays;
+        '<text x="0" y="'+(topY-12)+'" class="ilabel">'+
+          (t.owner==='you'?'YOURS':t.owner==='Unclaimed'?'ISLE '+t.id:t.owner.toUpperCase())+'</text>'+
+        '<g transform="translate(0,'+(topY-8)+')"><path d="M-16,0 L16,0 L16,11 L0,17 L-16,11 Z" fill="rgba(8,20,34,.85)" stroke="'+col+'" stroke-width="1.5"/><text x="0" y="9" class="itxt" font-size="14">'+t.gar+'</text></g>';
       pos.appendChild(inner);wrap.appendChild(pos);g.appendChild(wrap);
       return;
     }
