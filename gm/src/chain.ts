@@ -14,6 +14,7 @@ import type {
   Transport,
 } from "viem";
 import type { ChainOps } from "./driver.js";
+import type { RawTickSummary, TickSummaryReader } from "./scheduler.js";
 import type { Address, SignedContest } from "./types.js";
 
 export interface Artifact {
@@ -106,4 +107,58 @@ export class ViemChainOps implements ChainOps {
     // regions(id) -> (tileCount, lastTick, exists, params)
     return region[1] as bigint;
   }
+}
+
+/** read a settled tick's outcomes back from chain events — what the
+ *  narrator is allowed to know */
+export function makeTickSummaryReader(
+  publicClient: Pick<PublicClient, "getContractEvents">,
+  settlement: Address,
+  abi: Abi,
+): TickSummaryReader {
+  return async (regionId, tick): Promise<RawTickSummary> => {
+    const read = (eventName: string) =>
+      publicClient.getContractEvents({
+        address: settlement,
+        abi,
+        eventName,
+        args: { regionId, tick },
+        fromBlock: 0n,
+      } as Parameters<PublicClient["getContractEvents"]>[0]);
+
+    const [settled, skipped, ticks] = await Promise.all([
+      read("ContestSettled"),
+      read("ContestSkipped"),
+      read("TickSettled"),
+    ]);
+
+    type Args = Record<string, unknown>;
+    const outcomes = settled.map((log) => {
+      const a = (log as { args: Args }).args;
+      return {
+        tileId: a.tileId as bigint,
+        attacker: a.attacker as Address,
+        defender: a.defender as Address,
+        attackerWon: a.attackerWon as boolean,
+        pWad: a.pWad as bigint,
+        roll: a.roll as bigint,
+        burned: a.burned as bigint,
+      };
+    });
+    const skips = skipped.map((log) => {
+      const a = (log as { args: Args }).args;
+      return {
+        attacker: a.attacker as Address,
+        tileId: a.tileId as bigint,
+        reason: Number(a.reason),
+      };
+    });
+    const t = (ticks[0] as { args: Args } | undefined)?.args;
+    return {
+      outcomes,
+      skipped: skips,
+      minted: (t?.minted as bigint) ?? 0n,
+      burned: (t?.burned as bigint) ?? 0n,
+    };
+  };
 }
