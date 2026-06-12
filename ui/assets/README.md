@@ -27,10 +27,12 @@ badge colors instead.
 | `cloud-1..4.png` | Background/cloud1..4 | drifting clouds |
 | `sky.png` | Background/Islands_elements | full-bleed sky |
 | `rock-1.png`, `rock-2.png` | Elements/stones/small_stones s_stone-3/5 | floating route rocks |
+| `tower-1..5.png` | Elements/buildings/mage-tower_1..5 | garrison-tier towers on held isles (tier: <70, <90, <110, <130, ≥130) |
 
 Unused-but-available in the pack: 26 clear islands (empty tops),
-perspective variants, buildings (5 mage towers — future garrison tiers),
-tents, trees, torches, bridges, the airship.
+perspective variants, other buildings (church, tavern, blacksmith,
+windmills, portals, tree village), tents, trees, torches, bridges,
+the airship.
 
 ## Also here, also local-only
 

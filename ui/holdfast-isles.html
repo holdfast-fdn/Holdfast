@@ -162,14 +162,17 @@ let selected=5;
 const ISLAND_ART=tiles_i=>'assets/isl-'+(tiles_i+1)+'.png'; // one painting per tile
 const CLOUD_ART=['assets/cloud-1.png','assets/cloud-2.png','assets/cloud-3.png','assets/cloud-4.png'];
 const ROCK_ART=['assets/rock-1.png','assets/rock-2.png'];
+const TOWER_ART=[1,2,3,4,5].map(n=>'assets/tower-'+n+'.png');
 const SKY_ART='assets/sky.png';
+// garrison -> mage-tower tier (matches fortLabel bands, finer-grained)
+function towerTier(g){return g>=130?5:g>=110?4:g>=90?3:g>=70?2:1;}
 const sprites={};let skyOk=false;
 const SPRITE_W=198;   // on-map island sprite width before per-isle scale
 function loadImg(src){return new Promise(res=>{const im=new Image();
   im.onload=()=>res({ok:true,w:im.naturalWidth,h:im.naturalHeight});
   im.onerror=()=>res({ok:false});im.src=src;});}
 async function preloadAssets(){
-  const urls=[SKY_ART,...CLOUD_ART,...ROCK_ART];
+  const urls=[SKY_ART,...CLOUD_ART,...ROCK_ART,...TOWER_ART];
   for(let i=0;i<9;i++)urls.push(ISLAND_ART(i));
   await Promise.all(urls.map(async u=>{sprites[u]=await loadImg(u);}));
   skyOk=sprites[SKY_ART].ok;
@@ -340,10 +343,19 @@ function drawIslands(){
 
     if(useSprite){
       const W=SPRITE_W,H=W*sp.h/sp.w;
-      // paintings anchor their grass line ~42% down the canvas
+      // held isles raise a mage tower; the variant tracks the garrison tier
+      let tower='';
+      if(t.owner!=='Unclaimed'){
+        const ta=TOWER_ART[towerTier(t.gar)-1];const ts=sprites[ta];
+        if(ts&&ts.ok){
+          const Tw=W*0.20,Th=Tw*ts.h/ts.w;
+          tower='<image href="'+ta+'" x="'+(W*0.10-Tw/2)+'" y="'+(-Th-W*0.02)+'" width="'+Tw+'" height="'+Th+'"/>';
+        }
+      }
       inner.innerHTML=
         (selected===i?'<ellipse cx="0" cy="6" rx="'+(W*.36)+'" ry="'+(W*.13)+'" fill="none" stroke="#FFFFFF" stroke-width="3.5" filter="url(#glow)" style="animation:ping 1.7s ease-out infinite"/>':'')+
         '<image href="'+art+'" x="'+(-W/2)+'" y="'+(-H*0.45)+'" width="'+W+'" height="'+H+'"/>'+
+        tower+
         '<ellipse cx="0" cy="6" rx="'+(W*.36)+'" ry="'+(W*.13)+'" fill="none" stroke="'+col+'" stroke-width="'+(selected===i?3.5:2)+'" opacity=".85"/>'+
         overlays;
       pos.appendChild(inner);wrap.appendChild(pos);g.appendChild(wrap);
