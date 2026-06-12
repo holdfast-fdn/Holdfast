@@ -136,15 +136,15 @@ const FCOL={you:'#D9A845','Iron Pact':'#5B8DB8','Ashen Horde':'#E25D38',Unclaime
 // dry unclaimed badlands. The map reads the war at a glance.
 const BIOME={you:'lush','Iron Pact':'snow','Ashen Horde':'volcano',Unclaimed:'desert'};
 const tiles=[
-  {id:'01',owner:'you',gar:120,since:19,last:'You took it from Iron Pact',x:230,y:178,s:1.0,sh:0},
-  {id:'02',owner:'you',gar:95,since:12,last:'Held against an Ashen assault',x:142,y:342,s:.82,sh:1},
-  {id:'03',owner:'Unclaimed',gar:60,since:null,last:'Open ground — never claimed',x:388,y:118,s:.78,sh:2},
-  {id:'04',owner:'Iron Pact',gar:110,since:15,last:'Iron Pact reinforced, +30',x:482,y:258,s:.95,sh:1},
-  {id:'05',owner:'Unclaimed',gar:65,since:null,last:'Contested twice, never taken',x:332,y:312,s:.74,sh:0},
-  {id:'06',owner:'Ashen Horde',gar:140,since:20,last:'Three assaults repelled',x:652,y:168,s:1.12,sh:2},
-  {id:'07',owner:'Unclaimed',gar:55,since:null,last:'Open ground, eastern edge',x:560,y:412,s:.7,sh:1},
-  {id:'08',owner:'Ashen Horde',gar:100,since:17,last:'Ashen Horde captured it',x:748,y:342,s:.9,sh:0},
-  {id:'09',owner:'Iron Pact',gar:80,since:14,last:'Light Iron Pact outpost',x:442,y:442,s:.78,sh:2},
+  {id:'01',owner:'you',gar:120,since:19,last:'You took it from Iron Pact',x:195,y:165,s:1.0,sh:0},
+  {id:'02',owner:'you',gar:95,since:12,last:'Held against an Ashen assault',x:120,y:375,s:.82,sh:1},
+  {id:'03',owner:'Unclaimed',gar:60,since:null,last:'Open ground — never claimed',x:415,y:88,s:.74,sh:2},
+  {id:'04',owner:'Iron Pact',gar:110,since:15,last:'Iron Pact reinforced, +30',x:470,y:265,s:.95,sh:1},
+  {id:'05',owner:'Unclaimed',gar:65,since:null,last:'Contested twice, never taken',x:295,y:330,s:.7,sh:0},
+  {id:'06',owner:'Ashen Horde',gar:140,since:20,last:'Three assaults repelled',x:628,y:132,s:1.05,sh:2},
+  {id:'07',owner:'Unclaimed',gar:55,since:null,last:'Open ground, eastern edge',x:540,y:455,s:.68,sh:1},
+  {id:'08',owner:'Ashen Horde',gar:100,since:17,last:'Ashen Horde captured it',x:705,y:345,s:.88,sh:0},
+  {id:'09',owner:'Iron Pact',gar:80,since:14,last:'Light Iron Pact outpost',x:400,y:470,s:.78,sh:2},
 ];
 const blobs=[
   "M-52,-4 C-54,-26 -30,-40 -6,-35 C18,-40 46,-30 52,-6 C58,16 40,36 12,38 C-14,42 -44,30 -52,-4 Z",
@@ -159,34 +159,32 @@ let selected=5;
 /* ---------------- optional sprite assets (ui/assets/) ----------------
    Drop PNGs there and they replace the procedural art automatically;
    anything missing falls back to the SVG drawings. See assets/README.md. */
-const ASSETS={
-  lush:'assets/island-lush.png',
-  volcano:'assets/island-volcano.png',
-  snow:'assets/island-snow.png',
-  desert:'assets/island-desert.png',
-  stone:'assets/stone.png',
-};
-const SEA_CANDIDATES=['assets/sea.png','assets/sea.jpg'];
-const sprites={};let seaSrc=null;
-const SPRITE_W=156;   // on-map island sprite width before per-isle scale
+const ISLAND_ART=tiles_i=>'assets/isl-'+(tiles_i+1)+'.png'; // one painting per tile
+const CLOUD_ART=['assets/cloud-1.png','assets/cloud-2.png','assets/cloud-3.png','assets/cloud-4.png'];
+const ROCK_ART=['assets/rock-1.png','assets/rock-2.png'];
+const SKY_ART='assets/sky.png';
+const sprites={};let skyOk=false;
+const SPRITE_W=198;   // on-map island sprite width before per-isle scale
 function loadImg(src){return new Promise(res=>{const im=new Image();
   im.onload=()=>res({ok:true,w:im.naturalWidth,h:im.naturalHeight});
   im.onerror=()=>res({ok:false});im.src=src;});}
 async function preloadAssets(){
-  await Promise.all(Object.entries(ASSETS).map(async([k,src])=>{sprites[k]=await loadImg(src);}));
-  for(const c of SEA_CANDIDATES){if((await loadImg(c)).ok){seaSrc=c;break;}}
+  const urls=[SKY_ART,...CLOUD_ART,...ROCK_ART];
+  for(let i=0;i<9;i++)urls.push(ISLAND_ART(i));
+  await Promise.all(urls.map(async u=>{sprites[u]=await loadImg(u);}));
+  skyOk=sprites[SKY_ART].ok;
 }
 
 /* ---------------- sea dressing ---------------- */
 function drawSea(){
   const g=document.getElementById('seaimg');g.innerHTML='';
-  if(!seaSrc)return;
+  if(!skyOk)return;
   const im=el('image',{width:900,height:560,preserveAspectRatio:'xMidYMid slice'});
-  im.setAttribute('href',seaSrc);g.appendChild(im);
+  im.setAttribute('href',SKY_ART);g.appendChild(im);
 }
 function drawCaustics(){
   const g=document.getElementById('caustics');g.innerHTML='';
-  if(seaSrc)return; // a real water texture brings its own light
+  if(skyOk)return; // open sky needs no water light
   const spots=[[90,60,80,26],[300,40,60,18],[560,70,95,30],[820,50,55,18],
     [60,250,55,20],[250,470,90,28],[480,520,70,22],[700,500,85,26],
     [860,260,60,22],[640,300,50,16],[180,140,40,14],[420,200,46,15]];
@@ -197,13 +195,21 @@ function drawCaustics(){
     g.appendChild(el('ellipse',{cx:x+rx*.3,cy:y-ry*.2,rx:rx*.45,ry:ry*.45,fill:'#A9E2FB',opacity:'.28'}));
   });
 }
-function drawClouds(){const g=document.getElementById('clouds');
-  [[150,80,1,52],[620,480,1.4,66],[790,110,1,58]].forEach(([x,y,s,dur],i)=>{
-    const pos=el('g',{transform:'translate('+x+','+y+') scale('+s+')'});
+function drawClouds(){const g=document.getElementById('clouds');g.innerHTML='';
+  [[110,70,1,52,0],[600,470,1.25,66,1],[780,100,.9,58,2],[330,520,1.1,72,3],[450,60,.7,62,1]]
+  .forEach(([x,y,sc,dur,ci],i)=>{
+    const pos=el('g',{transform:'translate('+x+','+y+') scale('+sc+')'});
     const c=el('g',{class:'cloud'});c.style.animationDuration=dur+'s';c.style.animationDelay=(-i*9)+'s';
-    c.appendChild(el('ellipse',{cx:0,cy:0,rx:44,ry:14,fill:'#EAF8FE',opacity:'.5'}));
-    c.appendChild(el('ellipse',{cx:24,cy:5,rx:28,ry:10,fill:'#EAF8FE',opacity:'.45'}));
-    c.appendChild(el('ellipse',{cx:-26,cy:6,rx:24,ry:9,fill:'#EAF8FE',opacity:'.45'}));
+    const art=CLOUD_ART[ci%CLOUD_ART.length];
+    if(sprites[art]&&sprites[art].ok){
+      const W=180,H=W*sprites[art].h/sprites[art].w;
+      const im=el('image',{x:-W/2,y:-H/2,width:W,height:H});im.setAttribute('href',art);
+      c.appendChild(im);
+    }else{
+      c.appendChild(el('ellipse',{cx:0,cy:0,rx:44,ry:14,fill:'#EAF8FE',opacity:'.5'}));
+      c.appendChild(el('ellipse',{cx:24,cy:5,rx:28,ry:10,fill:'#EAF8FE',opacity:'.45'}));
+      c.appendChild(el('ellipse',{cx:-26,cy:6,rx:24,ry:9,fill:'#EAF8FE',opacity:'.45'}));
+    }
     pos.appendChild(c);g.appendChild(pos);});}
 
 /* stepping-stone rocks along the sea routes (replaces dashed lines) */
@@ -214,11 +220,13 @@ function drawStones(){
     const mx=(A.x+B.x)/2+((i%3)-1)*14, my=(A.y+B.y)/2+18+((i%2)?8:-6);
     const s=.6+(i%3)*.16;
     const grp=el('g',{transform:'translate('+mx+','+my+') scale('+s+')'});
-    if(sprites.stone&&sprites.stone.ok){
-      const W=40,H=W*sprites.stone.h/sprites.stone.w;
-      grp.innerHTML='<image href="'+ASSETS.stone+'" x="'+(-W/2)+'" y="'+(-H*.6)+'" width="'+W+'" height="'+H+'"/>';
+    const rockArt=ROCK_ART[i%ROCK_ART.length];
+    if(sprites[rockArt]&&sprites[rockArt].ok){
+      const W=34,H=W*sprites[rockArt].h/sprites[rockArt].w;
+      grp.innerHTML='<image href="'+rockArt+'" x="'+(-W/2)+'" y="'+(-H*.6)+'" width="'+W+'" height="'+H+'"/>';
       g.appendChild(grp);return;
     }
+    if(skyOk){g.appendChild(grp);return;} // no foam blobs in the open sky
     grp.innerHTML=
       '<ellipse cx="0" cy="3" rx="22" ry="8" fill="#EAF8FE" opacity=".55"/>'+
       '<polygon points="-12,3 -10,-4 -2,-7 7,-4 10,2 1,6" fill="#8A5B3A"/>'+
@@ -309,10 +317,10 @@ function drawIslands(){
     const col=FCOL[t.owner];const blob=blobs[t.sh];
     const biome=BIOME[t.owner];const top=TOP[biome];
     const wrap=el('g',{class:'island'});wrap.onclick=()=>select(i);
-    const sp=sprites[biome];const useSprite=!!(sp&&sp.ok);
+    const art=ISLAND_ART(i);const sp=sprites[art];const useSprite=!!(sp&&sp.ok);
 
-    // anchored water dressing (sprites bring their own foam/shadow)
-    if(!useSprite){
+    // anchored water dressing (sprites/sky need none of it)
+    if(!useSprite&&!skyOk){
       const sh=el('ellipse',{cx:t.x,cy:t.y+30*t.s,rx:56*t.s,ry:16*t.s,fill:'#0B3A66',opacity:'.35'});
       sh.setAttribute('filter','url(#soft)');wrap.appendChild(sh);
       const foamOuter=el('path',{d:blob,transform:'translate('+t.x+','+(t.y+8)+') scale('+(t.s*1.42)+','+(t.s*1.30)+')',fill:'#8FD3F2',opacity:'.5'});
@@ -332,11 +340,11 @@ function drawIslands(){
 
     if(useSprite){
       const W=SPRITE_W,H=W*sp.h/sp.w;
-      const flip=(i%2===1)?'-1':'1'; // mirror every other isle for variety
+      // paintings anchor their grass line ~42% down the canvas
       inner.innerHTML=
-        (selected===i?'<ellipse cx="0" cy="16" rx="'+(W*.46)+'" ry="'+(W*.17)+'" fill="none" stroke="#FFFFFF" stroke-width="3.5" filter="url(#glow)" style="animation:ping 1.7s ease-out infinite"/>':'')+
-        '<g transform="scale('+flip+',1)"><image href="'+ASSETS[biome]+'" x="'+(-W/2)+'" y="'+(-H*0.62)+'" width="'+W+'" height="'+H+'"/></g>'+
-        '<ellipse cx="0" cy="16" rx="'+(W*.46)+'" ry="'+(W*.17)+'" fill="none" stroke="'+col+'" stroke-width="'+(selected===i?3.5:2)+'" opacity=".9"/>'+
+        (selected===i?'<ellipse cx="0" cy="6" rx="'+(W*.36)+'" ry="'+(W*.13)+'" fill="none" stroke="#FFFFFF" stroke-width="3.5" filter="url(#glow)" style="animation:ping 1.7s ease-out infinite"/>':'')+
+        '<image href="'+art+'" x="'+(-W/2)+'" y="'+(-H*0.45)+'" width="'+W+'" height="'+H+'"/>'+
+        '<ellipse cx="0" cy="6" rx="'+(W*.36)+'" ry="'+(W*.13)+'" fill="none" stroke="'+col+'" stroke-width="'+(selected===i?3.5:2)+'" opacity=".85"/>'+
         overlays;
       pos.appendChild(inner);wrap.appendChild(pos);g.appendChild(wrap);
       return;

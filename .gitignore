@@ -24,3 +24,14 @@ Thumbs.db
 # GM service runtime artifacts — keys & tick state never enter the repo
 gm/keys*.json
 gm/state/
+
+# Purchased art packs — LOCAL ONLY, never push to the public repo
+# (Moon Tribe 2D Floating Islands; low-poly 3D pack CC BY-ND)
+ui/assets/*.png
+ui/assets/*.jpg
+ui/assets/models/
+*.unitypackage
+PNG.zip
+PSD.zip
+Models Islands.zip
+Screenshot*.png
