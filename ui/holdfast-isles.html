@@ -105,6 +105,7 @@
       <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
     <rect width="900" height="560" fill="url(#sea)"/>
+    <g id="seaimg"></g>
     <g id="caustics"></g>
     <g id="stones"></g>
     <g id="clouds"></g>
@@ -155,9 +156,37 @@ const NS='http://www.w3.org/2000/svg';
 function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
 let selected=5;
 
+/* ---------------- optional sprite assets (ui/assets/) ----------------
+   Drop PNGs there and they replace the procedural art automatically;
+   anything missing falls back to the SVG drawings. See assets/README.md. */
+const ASSETS={
+  lush:'assets/island-lush.png',
+  volcano:'assets/island-volcano.png',
+  snow:'assets/island-snow.png',
+  desert:'assets/island-desert.png',
+  stone:'assets/stone.png',
+};
+const SEA_CANDIDATES=['assets/sea.png','assets/sea.jpg'];
+const sprites={};let seaSrc=null;
+const SPRITE_W=156;   // on-map island sprite width before per-isle scale
+function loadImg(src){return new Promise(res=>{const im=new Image();
+  im.onload=()=>res({ok:true,w:im.naturalWidth,h:im.naturalHeight});
+  im.onerror=()=>res({ok:false});im.src=src;});}
+async function preloadAssets(){
+  await Promise.all(Object.entries(ASSETS).map(async([k,src])=>{sprites[k]=await loadImg(src);}));
+  for(const c of SEA_CANDIDATES){if((await loadImg(c)).ok){seaSrc=c;break;}}
+}
+
 /* ---------------- sea dressing ---------------- */
+function drawSea(){
+  const g=document.getElementById('seaimg');g.innerHTML='';
+  if(!seaSrc)return;
+  const im=el('image',{width:900,height:560,preserveAspectRatio:'xMidYMid slice'});
+  im.setAttribute('href',seaSrc);g.appendChild(im);
+}
 function drawCaustics(){
   const g=document.getElementById('caustics');g.innerHTML='';
+  if(seaSrc)return; // a real water texture brings its own light
   const spots=[[90,60,80,26],[300,40,60,18],[560,70,95,30],[820,50,55,18],
     [60,250,55,20],[250,470,90,28],[480,520,70,22],[700,500,85,26],
     [860,260,60,22],[640,300,50,16],[180,140,40,14],[420,200,46,15]];
@@ -185,6 +214,11 @@ function drawStones(){
     const mx=(A.x+B.x)/2+((i%3)-1)*14, my=(A.y+B.y)/2+18+((i%2)?8:-6);
     const s=.6+(i%3)*.16;
     const grp=el('g',{transform:'translate('+mx+','+my+') scale('+s+')'});
+    if(sprites.stone&&sprites.stone.ok){
+      const W=40,H=W*sprites.stone.h/sprites.stone.w;
+      grp.innerHTML='<image href="'+ASSETS.stone+'" x="'+(-W/2)+'" y="'+(-H*.6)+'" width="'+W+'" height="'+H+'"/>';
+      g.appendChild(grp);return;
+    }
     grp.innerHTML=
       '<ellipse cx="0" cy="3" rx="22" ry="8" fill="#EAF8FE" opacity=".55"/>'+
       '<polygon points="-12,3 -10,-4 -2,-7 7,-4 10,2 1,6" fill="#8A5B3A"/>'+
@@ -275,18 +309,38 @@ function drawIslands(){
     const col=FCOL[t.owner];const blob=blobs[t.sh];
     const biome=BIOME[t.owner];const top=TOP[biome];
     const wrap=el('g',{class:'island'});wrap.onclick=()=>select(i);
+    const sp=sprites[biome];const useSprite=!!(sp&&sp.ok);
 
-    // anchored water dressing (does not bob): shadow + foam ring
-    const sh=el('ellipse',{cx:t.x,cy:t.y+30*t.s,rx:56*t.s,ry:16*t.s,fill:'#0B3A66',opacity:'.35'});
-    sh.setAttribute('filter','url(#soft)');wrap.appendChild(sh);
-    const foamOuter=el('path',{d:blob,transform:'translate('+t.x+','+(t.y+8)+') scale('+(t.s*1.42)+','+(t.s*1.30)+')',fill:'#8FD3F2',opacity:'.5'});
-    foamOuter.setAttribute('filter','url(#soft)');wrap.appendChild(foamOuter);
-    wrap.appendChild(el('path',{d:blob,transform:'translate('+t.x+','+(t.y+6)+') scale('+(t.s*1.22)+','+(t.s*1.14)+')',fill:'#EAF8FE',opacity:'.85'}));
+    // anchored water dressing (sprites bring their own foam/shadow)
+    if(!useSprite){
+      const sh=el('ellipse',{cx:t.x,cy:t.y+30*t.s,rx:56*t.s,ry:16*t.s,fill:'#0B3A66',opacity:'.35'});
+      sh.setAttribute('filter','url(#soft)');wrap.appendChild(sh);
+      const foamOuter=el('path',{d:blob,transform:'translate('+t.x+','+(t.y+8)+') scale('+(t.s*1.42)+','+(t.s*1.30)+')',fill:'#8FD3F2',opacity:'.5'});
+      foamOuter.setAttribute('filter','url(#soft)');wrap.appendChild(foamOuter);
+      wrap.appendChild(el('path',{d:blob,transform:'translate('+t.x+','+(t.y+6)+') scale('+(t.s*1.22)+','+(t.s*1.14)+')',fill:'#EAF8FE',opacity:'.85'}));
+    }
 
     // bobbing island body (outer g = position attribute, inner g = CSS anim)
     const pos=el('g',{transform:'translate('+t.x+','+t.y+') scale('+t.s+')'});
     const inner=el('g',{class:'bob'});
     inner.style.animationDuration=(4.5+(i%3)*0.8)+'s';inner.style.animationDelay=(-i*0.6)+'s';
+
+    const overlays=
+      (t.owner!=='Unclaimed'?'<rect x="-0.8" y="-54" width="1.6" height="20" fill="#E8E2D2"/><path d="M0.8,-53 l18,5 l-18,5 Z" fill="'+col+'" stroke="rgba(0,0,0,.3)" stroke-width=".5"/>':'')+
+      '<g transform="translate(0,24)"><path d="M-16,0 L16,0 L16,11 L0,17 L-16,11 Z" fill="rgba(8,20,34,.85)" stroke="'+col+'" stroke-width="1.5"/><text x="0" y="9" class="itxt" font-size="14">'+t.gar+'</text></g>'+
+      '<text x="0" y="48" class="ilabel">'+(t.owner==='you'?'YOURS':t.owner==='Unclaimed'?'ISLE '+t.id:t.owner.toUpperCase())+'</text>';
+
+    if(useSprite){
+      const W=SPRITE_W,H=W*sp.h/sp.w;
+      const flip=(i%2===1)?'-1':'1'; // mirror every other isle for variety
+      inner.innerHTML=
+        (selected===i?'<ellipse cx="0" cy="16" rx="'+(W*.46)+'" ry="'+(W*.17)+'" fill="none" stroke="#FFFFFF" stroke-width="3.5" filter="url(#glow)" style="animation:ping 1.7s ease-out infinite"/>':'')+
+        '<g transform="scale('+flip+',1)"><image href="'+ASSETS[biome]+'" x="'+(-W/2)+'" y="'+(-H*0.62)+'" width="'+W+'" height="'+H+'"/></g>'+
+        '<ellipse cx="0" cy="16" rx="'+(W*.46)+'" ry="'+(W*.17)+'" fill="none" stroke="'+col+'" stroke-width="'+(selected===i?3.5:2)+'" opacity=".9"/>'+
+        overlays;
+      pos.appendChild(inner);wrap.appendChild(pos);g.appendChild(wrap);
+      return;
+    }
     inner.innerHTML=
       // chunky volumetric cliff: three stacked plates
       '<g filter="url(#ishadow)">'+
@@ -305,11 +359,7 @@ function drawIslands(){
       '<path d="'+blob+'" transform="translate(0,-10) scale(0.93)" fill="none" stroke="'+col+'" stroke-width="'+(selected===i?4:2.5)+'" opacity=".95"/>'+
       // biome decorations on the surface
       '<g transform="translate(0,-12)">'+DECOR[biome](t.gar)+'</g>'+
-      // faction banner
-      (t.owner!=='Unclaimed'?'<rect x="-0.8" y="-54" width="1.6" height="20" fill="#E8E2D2"/><path d="M0.8,-53 l18,5 l-18,5 Z" fill="'+col+'" stroke="rgba(0,0,0,.3)" stroke-width=".5"/>':'')+
-      // garrison badge
-      '<g transform="translate(0,24)"><path d="M-16,0 L16,0 L16,11 L0,17 L-16,11 Z" fill="rgba(8,20,34,.85)" stroke="'+col+'" stroke-width="1.5"/><text x="0" y="9" class="itxt" font-size="14">'+t.gar+'</text></g>'+
-      '<text x="0" y="48" class="ilabel">'+(t.owner==='you'?'YOURS':t.owner==='Unclaimed'?'ISLE '+t.id:t.owner.toUpperCase())+'</text>';
+      overlays;
     pos.appendChild(inner);wrap.appendChild(pos);g.appendChild(wrap);
   });
 }
@@ -348,7 +398,9 @@ const tk=document.getElementById('tk');logs.concat(logs).forEach(l=>{const s=doc
 
 let secs=43084;setInterval(()=>{secs--;const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');document.getElementById('timer').textContent=h+':'+m+':'+s;},1000);
 
-drawCaustics();drawStones();drawClouds();drawIslands();renderStand();select(5);
+preloadAssets().then(()=>{
+  drawSea();drawCaustics();drawStones();drawClouds();drawIslands();renderStand();select(5);
+});
 </script>
 </body>
 </html>
