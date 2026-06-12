@@ -132,10 +132,98 @@
 </div>
 
 <script>
+/* ================= LIVE CHAIN MODE =================
+   Read-only projection of HoldfastSettlement (ADR-002: the client draws,
+   never decides). Open with:
+     ?rpc=<json-rpc url>&settlement=0x...&region=0&me=0x...&names=0xabc:alice,0xdef:bob
+   Without params (or on any error) the page falls back to demo data.
+   Raw JSON-RPC on purpose — no SDK, view-source friendly. */
+const Q=new URLSearchParams(location.search);
+const LIVE={rpc:Q.get('rpc'),settlement:Q.get('settlement'),
+  region:BigInt(Q.get('region')||'0'),me:(Q.get('me')||'').toLowerCase(),
+  names:Object.fromEntries((Q.get('names')||'').split(',').filter(Boolean)
+    .map(kv=>{const[a,n]=kv.split(':');return[a.toLowerCase(),n];}))};
+const SEL_TILES='0x8a3d7cdc';            // tiles(uint256,uint256)
+const SEL_REGIONS='0x132abfb6';          // regions(uint256)
+const TOPIC_CONTEST='0x4bea9d823fd2794a04a6e4b1225d54d8d07f110aa17febb8751ea509798f7de1';
+const WADF=1e18;
+const hex32=v=>v.toString(16).padStart(64,'0');
+async function rpcCall(method,params){
+  const r=await fetch(LIVE.rpc,{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+  const j=await r.json();
+  if(j.error)throw new Error(j.error.message);
+  return j.result;
+}
+const ethCall=data=>rpcCall('eth_call',[{to:LIVE.settlement,data},'latest']);
+const word=(hx,i)=>BigInt('0x'+hx.slice(2).slice(i*64,(i+1)*64));
+const addrAt=(hx,i)=>'0x'+hx.slice(2).slice(i*64+24,(i+1)*64);
+function liveName(a){
+  a=a.toLowerCase();
+  if(a===LIVE.me)return 'you';
+  return LIVE.names[a]||(a.slice(0,6)+'…'+a.slice(-4));
+}
+const LIVE_PALETTE=['#5B8DB8','#E25D38','#8A6FD1','#4FA37A','#C95B9A','#B8862F'];
+function liveColor(a){
+  a=a.toLowerCase();
+  if(a===LIVE.me)return '#D9A845';
+  let h=0;for(const c of a)h=(h*31+c.charCodeAt(0))>>>0;
+  return LIVE_PALETTE[h%LIVE_PALETTE.length];
+}
+async function loadLiveWorld(){
+  const reg=await ethCall(SEL_REGIONS+hex32(LIVE.region));
+  const tileCount=Number(word(reg,0)&0xFFFFFFFFFFFFFFFFn);
+  const lastTick=Number(word(reg,1));
+  if(!Number(word(reg,2)))throw new Error('region does not exist');
+  const n=Math.min(tileCount,9); // mock layout carries 9 positions
+  const layout=tiles; // demo entries double as position/art templates
+  const out=[];
+  for(let i=0;i<n;i++){
+    const t=await ethCall(SEL_TILES+hex32(LIVE.region)+hex32(BigInt(i)));
+    const ownerAddr=addrAt(t,0);
+    const gar=Number(word(t,1))/WADF;
+    const wild=/^0x0+$/.test(ownerAddr);
+    out.push({...layout[i],
+      id:String(i+1).padStart(2,'0'),
+      owner:wild?'Unclaimed':liveName(ownerAddr),
+      ownerAddr,
+      gar:Math.round(gar*10)/10,
+      since:null,
+      last:wild?'Held by the wilds':'Read from chain'});
+  }
+  // recent war log from ContestSettled events
+  let logsOut=[];
+  try{
+    const logs=await rpcCall('eth_getLogs',[{address:LIVE.settlement,
+      fromBlock:'0x0',toBlock:'latest',
+      topics:[TOPIC_CONTEST,'0x'+hex32(LIVE.region)]}]);
+    logsOut=logs.slice(-8).reverse().map(l=>{
+      const tick=Number(BigInt(l.topics[2]));
+      const attacker=liveName('0x'+l.topics[3].slice(26));
+      const d=l.data;
+      const tileId=Number(word(d,0))+1;
+      const defAddr=addrAt(d,1);
+      const defender=/^0x0+$/.test(defAddr)?'the wilds':liveName(defAddr);
+      const won=Number(word(d,2))===1;
+      const pPct=Math.round(Number(word(d,3))/WADF*100);
+      return {tk:'T'+tick,tx:won
+        ?'<span class="e">'+attacker+'</span> took <b>Isle '+String(tileId).padStart(2,'0')+'</b> from '+defender+' ('+pPct+'% — won).'
+        :defender+' held <b>Isle '+String(tileId).padStart(2,'0')+'</b> against <span class="e">'+attacker+'</span> ('+pPct+'% — lost).'};
+    });
+  }catch(e){/* logs are optional */}
+  return {tiles:out,lastTick,logs:logsOut};
+}
+/* =============== end live chain mode =============== */
+
 const FCOL={you:'#D9A845','Iron Pact':'#5B8DB8','Ashen Horde':'#E25D38',Unclaimed:'#86946d'};
 // faction -> biome: lush homeland, frozen Iron Pact, volcanic Ashen Horde,
 // dry unclaimed badlands. The map reads the war at a glance.
 const BIOME={you:'lush','Iron Pact':'snow','Ashen Horde':'volcano',Unclaimed:'desert'};
+function colorOf(t){
+  if(t.ownerAddr)return t.owner==='Unclaimed'?'#86946d':liveColor(t.ownerAddr);
+  return FCOL[t.owner];
+}
+function biomeOf(t){return BIOME[t.owner]||(t.owner==='Unclaimed'?'desert':'lush');}
 const tiles=[
   {id:'01',owner:'you',gar:120,since:19,last:'You took it from Iron Pact',x:195,y:185,s:1.0,sh:0,ta:[0.33,0.62]},
   {id:'02',owner:'you',gar:95,since:12,last:'Held against an Ashen assault',x:120,y:375,s:.82,sh:1,ta:[0.40,0.16]},
@@ -339,8 +427,8 @@ function drawAirship(){
 function drawIslands(){
   const g=document.getElementById('islands');g.innerHTML='';
   tiles.forEach((t,i)=>{
-    const col=FCOL[t.owner];const blob=blobs[t.sh];
-    const biome=BIOME[t.owner];const top=TOP[biome];
+    const col=colorOf(t);const blob=blobs[t.sh];
+    const biome=biomeOf(t);const top=TOP[biome];
     const wrap=el('g',{class:'island'});wrap.onclick=()=>select(i);
     const art=ISLAND_ART(i);const sp=sprites[art];const useSprite=!!(sp&&sp.ok);
 
@@ -414,14 +502,19 @@ function drawIslands(){
 }
 
 function renderStand(){
-  const counts={};tiles.forEach(t=>{counts[t.owner]=(counts[t.owner]||0)+1;});
-  const order=['you','Ashen Horde','Iron Pact','Unclaimed'];const box=document.getElementById('stand');box.innerHTML='';
-  order.forEach(f=>{const c=counts[f]||0,pct=Math.round(c/9*100);const d=document.createElement('div');d.className='frow';
-    d.innerHTML='<span class="fdot" style="background:'+FCOL[f]+';color:'+FCOL[f]+'"></span><span class="fname '+(f==='you'?'you':'')+'">'+(f==='you'?'You':f)+'</span><span class="fbar"><span style="width:'+pct+'%;background:'+FCOL[f]+';color:'+FCOL[f]+'"></span></span><span class="fnum"><b>'+c+'</b>/9</span>';
+  const counts={},colors={};
+  tiles.forEach(t=>{counts[t.owner]=(counts[t.owner]||0)+1;colors[t.owner]=colorOf(t);});
+  const order=Object.keys(counts).sort((a,b)=>
+    a==='you'?-1:b==='you'?1:
+    a==='Unclaimed'?1:b==='Unclaimed'?-1:counts[b]-counts[a]);
+  const box=document.getElementById('stand');box.innerHTML='';
+  order.forEach(f=>{const c=counts[f],pct=Math.round(c/tiles.length*100),fc=colors[f];
+    const d=document.createElement('div');d.className='frow';
+    d.innerHTML='<span class="fdot" style="background:'+fc+';color:'+fc+'"></span><span class="fname '+(f==='you'?'you':'')+'">'+(f==='you'?'You':f)+'</span><span class="fbar"><span style="width:'+pct+'%;background:'+fc+';color:'+fc+'"></span></span><span class="fnum"><b>'+c+'</b>/'+tiles.length+'</span>';
     box.appendChild(d);});}
 function fortLabel(g){return g>=120?'FORTRESS':g>=90?'FORTIFIED':'OUTPOST';}
 function select(i){selected=i;drawIslands();
-  const t=tiles[i];const col=FCOL[t.owner];const def=(Math.pow(t.gar,0.5)*1.3).toFixed(1);
+  const t=tiles[i];const col=colorOf(t);const def=(Math.pow(t.gar,0.5)*1.3).toFixed(1);
   const garPct=Math.min(100,t.gar/180*100),defPct=Math.min(100,def/20*100);let threat,tcls;
   if(t.owner==='you'){threat='Yours. Earns +4 Flux each tick. Its garrison hardens slowly while unchallenged.';tcls='lo';}
   else if(t.gar>=120){threat='High threat. Every repelled assault has thickened these walls. Breaking it needs a heavy commitment — the defender still holds the edge.';tcls='hi';}
@@ -435,7 +528,7 @@ function select(i){selected=i;drawIslands();
     (t.owner!=='you'?'<div class="cta">⚔ Issue orders · @HoldfastGM</div>':'<div class="cta def">🛡 Reinforce · @HoldfastGM</div>')+'</div>';
 }
 
-const logs=[
+let warLogs=[
   {tk:'T24',tx:'Dawn breaks over the isles. The <span class="h">Ashen Horde</span> stirs in the east.'},
   {tk:'T23',tx:'<span class="h">Ashen Horde</span> seized <b>Isle 07</b> and now presses your waters.'},
   {tk:'T23',tx:'<span class="p">Iron Pact</span> reinforced <b>Isle 04</b> — garrison now 110.'},
@@ -443,12 +536,28 @@ const logs=[
   {tk:'T21',tx:'<b>Isle 06</b> repelled its third assault. It is a fortress now.'},
   {tk:'T19',tx:'<span class="e">You</span> took <b>Isle 01</b> from <span class="p">Iron Pact</span>, +55 Flux spoils.'},
 ];
-const tk=document.getElementById('tk');logs.concat(logs).forEach(l=>{const s=document.createElement('span');s.className='tkitem';s.innerHTML='<span class="tk">'+l.tk+'</span>'+l.tx;tk.appendChild(s);});
+function renderTicker(){
+  const tk=document.getElementById('tk');tk.innerHTML='';
+  warLogs.concat(warLogs).forEach(l=>{const s=document.createElement('span');
+    s.className='tkitem';s.innerHTML='<span class="tk">'+l.tk+'</span>'+l.tx;tk.appendChild(s);});
+}
 
-let secs=43084;setInterval(()=>{secs--;const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');document.getElementById('timer').textContent=h+':'+m+':'+s;},1000);
+if(!LIVE.rpc){ // the mock countdown belongs to demo mode only
+  let secs=43084;setInterval(()=>{secs--;const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');document.getElementById('timer').textContent=h+':'+m+':'+s;},1000);
+}
 
-preloadAssets().then(()=>{
-  drawSea();drawCaustics();drawStones();drawClouds();drawIslands();drawAirship();renderStand();select(5);
+preloadAssets().then(async()=>{
+  if(LIVE.rpc&&LIVE.settlement){
+    try{
+      const w=await loadLiveWorld();
+      tiles.length=0;w.tiles.forEach(t=>tiles.push(t));
+      if(w.logs.length)warLogs=w.logs;
+      document.querySelector('.clock .k').innerHTML='<span class="dot"></span>LIVE · on-chain';
+      document.getElementById('timer').textContent='Tick '+w.lastTick+' settled';
+    }catch(e){console.warn('live mode unavailable -> demo data:',e);}
+  }
+  drawSea();drawCaustics();drawStones();drawClouds();drawIslands();drawAirship();
+  renderTicker();renderStand();select(Math.min(5,tiles.length-1));
 });
 </script>
 </body>

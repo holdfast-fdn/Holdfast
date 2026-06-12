@@ -63,7 +63,7 @@ The real test. Everything before is preparation.
 ## Phase 5 — Companion polish & indexer
 
 - [ ] Indexer (Ponder-like) reading chain events + tick inputs to serve UIs.
-- [ ] Production web companion: swap hardcoded state for indexer feed; drop in Kenney (CC0) art; optional three.js "hero map."
+- [x] Companion live-read prototype: `ui/holdfast-isles.html?rpc=…&settlement=0x…` renders tiles/owners/garrisons via raw `eth_call` and the war log via `ContestSettled` logs — zero dependencies, falls back to demo data without params (verified against a seeded anvil via `gm/scripts/devworld.mjs`). At MVP scale this needs no indexer; an indexer still becomes worthwhile for history/scale. Map art: purchased Moon Tribe pack (local-only assets, see ui/assets/README.md); three.js hero map still optional (3D pack on hand).
 - [ ] Telegram UX hardening (onboarding, error states).
 
 ## Phase 6 — Scaling & hardening (only if Phase 4 succeeds)
