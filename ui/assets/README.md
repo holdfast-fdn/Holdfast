@@ -28,6 +28,7 @@ badge colors instead.
 | `sky.png` | Background/Islands_elements | full-bleed sky |
 | `rock-1.png`, `rock-2.png` | Elements/stones/small_stones s_stone-3/5 | floating route rocks |
 | `tower-1..5.png` | Elements/buildings/mage-tower_1..5 | garrison-tier towers on held isles (tier: <70, <90, <110, <130, ≥130) |
+| `airship.png` | Elements/buildings/traveling-merchant | the merchant's trade run (animateMotion loop) |
 
 Unused-but-available in the pack: 26 clear islands (empty tops),
 perspective variants, other buildings (church, tavern, blacksmith,

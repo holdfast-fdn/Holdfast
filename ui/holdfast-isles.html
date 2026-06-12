@@ -110,6 +110,7 @@
     <g id="stones"></g>
     <g id="clouds"></g>
     <g id="islands"></g>
+    <g id="airship"></g>
   </svg>
   <div class="vig"></div>
 
@@ -163,6 +164,7 @@ const ISLAND_ART=tiles_i=>'assets/isl-'+(tiles_i+1)+'.png'; // one painting per 
 const CLOUD_ART=['assets/cloud-1.png','assets/cloud-2.png','assets/cloud-3.png','assets/cloud-4.png'];
 const ROCK_ART=['assets/rock-1.png','assets/rock-2.png'];
 const TOWER_ART=[1,2,3,4,5].map(n=>'assets/tower-'+n+'.png');
+const AIRSHIP_ART='assets/airship.png';
 const SKY_ART='assets/sky.png';
 // garrison -> mage-tower tier (matches fortLabel bands, finer-grained)
 function towerTier(g){return g>=130?5:g>=110?4:g>=90?3:g>=70?2:1;}
@@ -172,7 +174,7 @@ function loadImg(src){return new Promise(res=>{const im=new Image();
   im.onload=()=>res({ok:true,w:im.naturalWidth,h:im.naturalHeight});
   im.onerror=()=>res({ok:false});im.src=src;});}
 async function preloadAssets(){
-  const urls=[SKY_ART,...CLOUD_ART,...ROCK_ART,...TOWER_ART];
+  const urls=[SKY_ART,...CLOUD_ART,...ROCK_ART,...TOWER_ART,AIRSHIP_ART];
   for(let i=0;i<9;i++)urls.push(ISLAND_ART(i));
   await Promise.all(urls.map(async u=>{sprites[u]=await loadImg(u);}));
   skyOk=sprites[SKY_ART].ok;
@@ -314,6 +316,26 @@ const TOP={
   desert:{base:'#E8A93C',lit:'#F4C463',rim:'#F6E2B0',cliff:'url(#cliff-desert)'},
 };
 
+/* the traveling merchant: a slow trade run weaving between the isles */
+function drawAirship(){
+  const g=document.getElementById('airship');g.innerHTML='';
+  const a=sprites[AIRSHIP_ART];if(!a||!a.ok)return;
+  const W=82,H=W*a.h/a.w;
+  const fly=el('g',{});
+  const bob=el('g',{class:'bob'});bob.style.animationDuration='5.2s';
+  const im=el('image',{x:-W/2,y:-H/2,width:W,height:H});
+  im.setAttribute('href',AIRSHIP_ART);
+  bob.appendChild(im);fly.appendChild(bob);
+  // the ship noses left, so it sails right-to-left across the isles
+  const mot=document.createElementNS(NS,'animateMotion');
+  mot.setAttribute('dur','75s');mot.setAttribute('repeatCount','indefinite');
+  mot.setAttribute('begin','-18s'); // join the run mid-route on page load
+  mot.setAttribute('path',
+    'M 990,200 C 800,140 660,330 500,260 C 360,200 240,360 60,300 '+
+    'C -40,270 -60,180 80,150 C 280,110 420,60 620,90 C 800,115 980,150 990,200');
+  fly.appendChild(mot);g.appendChild(fly);
+}
+
 function drawIslands(){
   const g=document.getElementById('islands');g.innerHTML='';
   tiles.forEach((t,i)=>{
@@ -426,7 +448,7 @@ const tk=document.getElementById('tk');logs.concat(logs).forEach(l=>{const s=doc
 let secs=43084;setInterval(()=>{secs--;const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');document.getElementById('timer').textContent=h+':'+m+':'+s;},1000);
 
 preloadAssets().then(()=>{
-  drawSea();drawCaustics();drawStones();drawClouds();drawIslands();renderStand();select(5);
+  drawSea();drawCaustics();drawStones();drawClouds();drawIslands();drawAirship();renderStand();select(5);
 });
 </script>
 </body>
