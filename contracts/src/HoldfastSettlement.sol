@@ -25,6 +25,16 @@ import {FluxToken} from "./FluxToken.sol";
 contract HoldfastSettlement {
     uint256 internal constant WAD = 1e18;
 
+    /// @dev EIP-712 typed intent — what a player actually authorizes.
+    bytes32 public constant INTENT_TYPEHASH = keccak256(
+        "Intent(uint256 regionId,uint64 tick,uint64 tileId,uint256 committed)"
+    );
+    /// @dev secp256k1 group order / 2 — reject malleable high-s signatures.
+    uint256 internal constant SECP256K1_HALF_N =
+        0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
+    bytes32 public immutable DOMAIN_SEPARATOR;
+
     FluxToken public immutable flux;
     /// @notice admin: region genesis + operator rotation. NOT able to touch
     ///         escrow or outcomes.
@@ -57,11 +67,28 @@ contract HoldfastSettlement {
         uint256 modWad;   // terrain modifier (Bucket 2, fixed at genesis)
     }
 
+    /// @dev The attacker's EIP-712 signature binds (regionId, tick, tileId,
+    ///      committed) — the funds-at-risk facts — so the operator can censor
+    ///      intents but can never FORGE one. `attackerMod` is deliberately
+    ///      outside the signature: it is GM-computed Bucket-2 state known
+    ///      only at tick close, and inflating it helps (never hurts) the
+    ///      signer; its accountability channel is `bucket2Root`.
     struct ContestInput {
         uint64 tileId;
         address attacker;
         uint256 committed;
         uint256 attackerMod; // Bucket-2 modifier; committed via bucket2Root
+        uint8 sigV;
+        bytes32 sigR;
+        bytes32 sigS;
+    }
+
+    /// @dev state-dependent skip reasons (player behavior between signing
+    ///      and settlement must never revert the whole region's tick).
+    enum SkipReason {
+        SelfAttack,         // attacker already owns the tile at resolution
+        DuplicateAttacker,  // same attacker appears twice for one tile
+        InsufficientEscrow  // escrow drained after the intent was signed
     }
 
     mapping(uint256 regionId => Region) public regions;
@@ -85,6 +112,13 @@ contract HoldfastSettlement {
         uint256 roll,
         uint256 burned
     );
+    event ContestSkipped(
+        uint256 indexed regionId,
+        uint64 indexed tick,
+        uint64 tileId,
+        address indexed attacker,
+        SkipReason reason
+    );
     event TickSettled(
         uint256 indexed regionId,
         uint64 indexed tick,
@@ -103,14 +137,23 @@ contract HoldfastSettlement {
     error WrongTick();
     error BadTileId();
     error BatchNotSorted();
-    error SelfAttack();
     error CommitTooSmall();
     error TransferFailed();
+    error BadSignature();
 
     constructor(FluxToken flux_) {
         if (address(flux_) == address(0)) revert ZeroAddress();
         flux = flux_;
         owner = msg.sender;
+        DOMAIN_SEPARATOR = keccak256(abi.encode(
+            keccak256(
+                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+            ),
+            keccak256(bytes("Holdfast")),
+            keccak256(bytes("1")),
+            block.chainid,
+            address(this)
+        ));
     }
 
     // ------------------------------------------------------------------
@@ -252,6 +295,12 @@ contract HoldfastSettlement {
         }
     }
 
+    /// @dev STRUCTURAL faults (bad ordering, bounds, size, signature) are the
+    ///      operator's responsibility and revert the batch. STATE-dependent
+    ///      conditions (escrow drained after signing, self-attack arising
+    ///      from earlier contests this tick, duplicates) are skipped with an
+    ///      event — otherwise any single player could grief the entire
+    ///      region's settlement by withdrawing after committing.
     function _phaseContests(
         uint256 regionId,
         uint64 tick,
@@ -273,13 +322,32 @@ contract HoldfastSettlement {
                 if (!ordered) revert BatchNotSorted();
             }
             if (c.committed < p.minCommit) revert CommitTooSmall();
+            _verifyIntent(regionId, tick, c);
+
+            // duplicate attacker within this tile's group: skip later entries
+            // (the batch is sorted, so a tile's group is contiguous)
+            if (_isDuplicate(contests, i)) {
+                emit ContestSkipped(regionId, tick, c.tileId, c.attacker,
+                    SkipReason.DuplicateAttacker);
+                continue;
+            }
 
             Tile storage tile = tiles[regionId][c.tileId];
             address defender = tile.owner;
-            if (c.attacker == defender) revert SelfAttack();
-
-            // afford check: the stake leaves the attacker's escrow now
-            escrow[c.attacker] -= c.committed; // checked: reverts if poor
+            if (c.attacker == defender) {
+                emit ContestSkipped(regionId, tick, c.tileId, c.attacker,
+                    SkipReason.SelfAttack);
+                continue;
+            }
+            if (escrow[c.attacker] < c.committed) {
+                emit ContestSkipped(regionId, tick, c.tileId, c.attacker,
+                    SkipReason.InsufficientEscrow);
+                continue;
+            }
+            // the stake leaves the attacker's escrow now
+            unchecked {
+                escrow[c.attacker] -= c.committed; // checked above
+            }
 
             uint256 word = uint256(keccak256(
                 abi.encodePacked(randomWord, regionId, tick, c.tileId, c.attacker)
@@ -312,5 +380,43 @@ contract HoldfastSettlement {
                 o.attackerWon, o.pWad, o.roll, o.burned
             );
         }
+    }
+
+    /// @dev The attacker must have signed (regionId, tick, tileId, committed)
+    ///      under this contract's EIP-712 domain. Rejects malleable high-s
+    ///      and invalid v values.
+    function _verifyIntent(
+        uint256 regionId,
+        uint64 tick,
+        ContestInput calldata c
+    ) internal view {
+        if (uint256(c.sigS) > SECP256K1_HALF_N) revert BadSignature();
+        if (c.sigV != 27 && c.sigV != 28) revert BadSignature();
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01",
+            DOMAIN_SEPARATOR,
+            keccak256(abi.encode(
+                INTENT_TYPEHASH, regionId, tick, c.tileId, c.committed
+            ))
+        ));
+        address recovered = ecrecover(digest, c.sigV, c.sigR, c.sigS);
+        if (recovered == address(0) || recovered != c.attacker) {
+            revert BadSignature();
+        }
+    }
+
+    /// @dev true if the same attacker already appeared for this tile earlier
+    ///      in the batch (groups are contiguous because the batch is sorted).
+    function _isDuplicate(ContestInput[] calldata contests, uint256 i)
+        internal pure returns (bool)
+    {
+        uint64 tileId = contests[i].tileId;
+        address attacker = contests[i].attacker;
+        for (uint256 j = i; j > 0;) {
+            j--;
+            if (contests[j].tileId != tileId) break;
+            if (contests[j].attacker == attacker) return true;
+        }
+        return false;
     }
 }

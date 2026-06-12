@@ -34,7 +34,7 @@ Reproduce the resolver on-chain. Highest-audit-surface artifact — write at aud
 - [x] Testnet onboarding: `enroll()` — owner credits starting escrow (minted, publicly evented). Deliberately centralized for the Phase-4 closed playtest; MUST be replaced by a reviewed distribution + legal clearance before any value deployment.
 - [x] Settlement-level parity mirror (`sim/settlement_fixed.py` + vendored stdlib-only keccak256 verified against `cast keccak`): generated 6-tick war replay (`SettlementParity.t.sol`) asserts escrows + total supply after EVERY tick and the final tile map, bit-for-bit — full-tick semantics (emission, batch order, per-contest keccak words, wilds burn) now under the gate.
 - [x] **Parity test (the correctness gate), contest-math level:** `contracts/test/ResolverParity.t.sol` asserts `ResolverLib` reproduces `sim/resolver_fixed.py` (the integer spec, ≤2e-16 from the float reference) bit-for-bit over 87 fixtures + fuzz properties. α fixed at 0.5 → exact floor `sqrt`; fractional-α pow deferred deliberately. Extend the gate to full settlement when the contract lands.
-- [ ] Self-audit: reentrancy, precision, access control, pause/upgrade story, unprivileged-attacker drain vectors.
+- [x] Self-audit (`docs/AUDIT.md`): drain analysis found and FIXED two real issues — operator intent forgery (now EIP-712-signed intents, censor-but-never-forge) and whole-tick grief via underfunded contests (now skip-with-event semantics, under the parity gate). Open/accepted: operator-chosen randomWord (M-2 — VRF mandatory before value), Bucket-2 modifier trust (bucket2Root), enroll faucet. External audit still gates Phase 6.
 
 **Exit:** bit-identical settlement results across the full Phase-0 scenario set; self-audit finds no critical/high issues.
 

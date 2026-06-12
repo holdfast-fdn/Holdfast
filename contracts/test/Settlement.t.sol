@@ -13,14 +13,20 @@ contract SettlementTest is Test {
     HoldfastSettlement st;
 
     address operator = makeAddr("operator");
-    address alice = makeAddr("alice");
-    address bob = makeAddr("bob");
-    address mallory = makeAddr("mallory");
+    address alice;
+    uint256 aliceKey;
+    address bob;
+    uint256 bobKey;
+    address mallory;
+    uint256 malloryKey;
 
     uint256 constant REGION = 0;
     uint64 constant TILES = 9;
 
     function setUp() public {
+        (alice, aliceKey) = makeAddrAndKey("alice");
+        (bob, bobKey) = makeAddrAndKey("bob");
+        (mallory, malloryKey) = makeAddrAndKey("mallory");
         flux = new FluxToken();
         st = new HoldfastSettlement(flux);
         flux.setMinter(address(st));
@@ -61,15 +67,33 @@ contract SettlementTest is Test {
         });
     }
 
-    function _contest(uint64 tileId, address attacker, uint256 committed)
-        internal pure returns (HoldfastSettlement.ContestInput memory)
+    /// @dev build a properly signed intent for the key's address
+    function _signed(uint64 tick, uint64 tileId, uint256 pk, uint256 committed)
+        internal view returns (HoldfastSettlement.ContestInput memory ci)
     {
-        return HoldfastSettlement.ContestInput({
+        bytes32 digest = _intentDigest(tick, tileId, committed);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
+        ci = HoldfastSettlement.ContestInput({
             tileId: tileId,
-            attacker: attacker,
+            attacker: vm.addr(pk),
             committed: committed,
-            attackerMod: WAD
+            attackerMod: WAD,
+            sigV: v,
+            sigR: r,
+            sigS: s
         });
+    }
+
+    function _intentDigest(uint64 tick, uint64 tileId, uint256 committed)
+        internal view returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(
+            "\x19\x01",
+            st.DOMAIN_SEPARATOR(),
+            keccak256(abi.encode(
+                st.INTENT_TYPEHASH(), REGION, tick, tileId, committed
+            ))
+        ));
     }
 
     function _settle(uint64 tick, uint256 word,
@@ -194,43 +218,127 @@ contract SettlementTest is Test {
         HoldfastSettlement.ContestInput[] memory cs =
             new HoldfastSettlement.ContestInput[](2);
         // same tile, ascending committed — violates desc-committed rule
-        cs[0] = _contest(5, alice, 30 * WAD);
-        cs[1] = _contest(5, bob, 40 * WAD);
+        cs[0] = _signed(1, 5, aliceKey, 30 * WAD);
+        cs[1] = _signed(1, 5, bobKey, 40 * WAD);
         vm.prank(operator);
         vm.expectRevert(HoldfastSettlement.BatchNotSorted.selector);
         st.settleTick(REGION, 1, 0, 0, cs);
 
         // descending tileIds — violates ascending-tile rule
-        cs[0] = _contest(6, alice, 30 * WAD);
-        cs[1] = _contest(5, bob, 40 * WAD);
+        cs[0] = _signed(1, 6, aliceKey, 30 * WAD);
+        cs[1] = _signed(1, 5, bobKey, 40 * WAD);
         vm.prank(operator);
         vm.expectRevert(HoldfastSettlement.BatchNotSorted.selector);
         st.settleTick(REGION, 1, 0, 0, cs);
     }
 
-    function test_contest_input_guards() public {
+    function test_structural_guards_revert() public {
         HoldfastSettlement.ContestInput[] memory cs =
             new HoldfastSettlement.ContestInput[](1);
 
-        cs[0] = _contest(99, alice, 30 * WAD); // no such tile
+        cs[0] = _signed(1, 99, aliceKey, 30 * WAD); // no such tile
         vm.prank(operator);
         vm.expectRevert(HoldfastSettlement.BadTileId.selector);
         st.settleTick(REGION, 1, 0, 0, cs);
 
-        cs[0] = _contest(5, alice, 19 * WAD); // below minCommit
+        cs[0] = _signed(1, 5, aliceKey, 19 * WAD); // below minCommit
         vm.prank(operator);
         vm.expectRevert(HoldfastSettlement.CommitTooSmall.selector);
         st.settleTick(REGION, 1, 0, 0, cs);
+    }
 
-        cs[0] = _contest(0, alice, 30 * WAD); // alice attacks her own tile
+    function test_forged_intent_reverts() public {
+        HoldfastSettlement.ContestInput[] memory cs =
+            new HoldfastSettlement.ContestInput[](1);
+
+        // operator tries to commit ALICE's escrow with BOB's signature
+        cs[0] = _signed(1, 5, bobKey, 30 * WAD);
+        cs[0].attacker = alice;
         vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.SelfAttack.selector);
+        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
         st.settleTick(REGION, 1, 0, 0, cs);
 
-        cs[0] = _contest(5, mallory, 30 * WAD); // mallory has no escrow
+        // tampered amount: signed 30, submitted 200 (>= minCommit)
+        cs[0] = _signed(1, 5, aliceKey, 30 * WAD);
+        cs[0].committed = 200 * WAD;
         vm.prank(operator);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
         st.settleTick(REGION, 1, 0, 0, cs);
+
+        // garbage v
+        cs[0] = _signed(1, 5, aliceKey, 30 * WAD);
+        cs[0].sigV = 26;
+        vm.prank(operator);
+        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
+        st.settleTick(REGION, 1, 0, 0, cs);
+    }
+
+    function test_intent_cannot_replay_another_tick() public {
+        // a signature for tick 1 must be useless at tick 2
+        HoldfastSettlement.ContestInput[] memory signedForTick1 =
+            new HoldfastSettlement.ContestInput[](1);
+        signedForTick1[0] = _signed(1, 5, aliceKey, 30 * WAD);
+
+        _settle(1, 0, _none());
+        vm.prank(operator);
+        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
+        st.settleTick(REGION, 2, 0, 0, signedForTick1);
+    }
+
+    function test_state_conditions_skip_not_revert() public {
+        // mallory signed honestly but has zero escrow; alice's contest in
+        // the same batch must still settle — no single player can grief the
+        // region's tick
+        HoldfastSettlement.ContestInput[] memory cs =
+            new HoldfastSettlement.ContestInput[](2);
+        cs[0] = _signed(1, 4, malloryKey, 30 * WAD);
+        cs[1] = _signed(1, 5, aliceKey, 120 * WAD);
+
+        uint256 word = _winningWordFor(1, 5, alice);
+        vm.expectEmit(true, true, false, true);
+        emit HoldfastSettlement.ContestSkipped(
+            REGION, 1, 4, mallory,
+            HoldfastSettlement.SkipReason.InsufficientEscrow);
+        _settle(1, word, cs);
+
+        (address tOwner,,) = st.tiles(REGION, 5);
+        assertEq(tOwner, alice, "alice's contest must still settle");
+        assertEq(st.escrow(mallory), 0);
+        _assertSolvent();
+    }
+
+    function test_self_attack_skips() public {
+        HoldfastSettlement.ContestInput[] memory cs =
+            new HoldfastSettlement.ContestInput[](1);
+        cs[0] = _signed(1, 0, aliceKey, 30 * WAD); // alice owns tile 0
+
+        vm.expectEmit(true, true, false, true);
+        emit HoldfastSettlement.ContestSkipped(
+            REGION, 1, 0, alice, HoldfastSettlement.SkipReason.SelfAttack);
+        _settle(1, 0, cs);
+
+        // nothing deducted beyond the yield she earned
+        assertEq(st.escrow(alice), 254 * WAD);
+        _assertSolvent();
+    }
+
+    function test_duplicate_attacker_skips_second() public {
+        // two valid alice intents on one tile: only the larger settles
+        HoldfastSettlement.ContestInput[] memory cs =
+            new HoldfastSettlement.ContestInput[](2);
+        cs[0] = _signed(1, 5, aliceKey, 40 * WAD);
+        cs[1] = _signed(1, 5, aliceKey, 30 * WAD);
+
+        uint256 word = _losingWordFor(1, 5, alice); // hold, simpler math
+        vm.expectEmit(true, true, false, true);
+        emit HoldfastSettlement.ContestSkipped(
+            REGION, 1, 5, alice,
+            HoldfastSettlement.SkipReason.DuplicateAttacker);
+        _settle(1, word, cs);
+
+        // start + yield - one 40 commit (30% of which burns vs the wilds)
+        assertEq(st.escrow(alice), (250 + 4 - 40) * WAD);
+        _assertSolvent();
     }
 
     // ------------------------------------------------------------------
@@ -260,7 +368,7 @@ contract SettlementTest is Test {
         // word multiple of WAD -> roll 0 -> any positive p wins
         HoldfastSettlement.ContestInput[] memory cs =
             new HoldfastSettlement.ContestInput[](1);
-        cs[0] = _contest(5, alice, 120 * WAD);
+        cs[0] = _signed(1, 5, aliceKey, 120 * WAD);
 
         uint256 word = _winningWordFor(1, 5, alice);
         _settle(1, word, cs);
@@ -283,7 +391,7 @@ contract SettlementTest is Test {
         // bob storms alice's home tile and the roll comes up max -> hold
         HoldfastSettlement.ContestInput[] memory cs =
             new HoldfastSettlement.ContestInput[](1);
-        cs[0] = _contest(0, bob, 100 * WAD);
+        cs[0] = _signed(1, 0, bobKey, 100 * WAD);
 
         uint256 word = _losingWordFor(1, 0, bob);
         _settle(1, word, cs);
@@ -303,7 +411,7 @@ contract SettlementTest is Test {
         // attacker loses to a nature tile: the whole commit leaves supply
         HoldfastSettlement.ContestInput[] memory cs =
             new HoldfastSettlement.ContestInput[](1);
-        cs[0] = _contest(5, bob, 40 * WAD);
+        cs[0] = _signed(1, 5, bobKey, 40 * WAD);
 
         uint256 supplyBefore = flux.totalSupply();
         uint256 word = _losingWordFor(1, 5, bob);
@@ -320,8 +428,8 @@ contract SettlementTest is Test {
         // (smaller commit) fights the FIRST attacker's fresh garrison
         HoldfastSettlement.ContestInput[] memory cs =
             new HoldfastSettlement.ContestInput[](2);
-        cs[0] = _contest(5, alice, 120 * WAD);
-        cs[1] = _contest(5, bob, 80 * WAD);
+        cs[0] = _signed(1, 5, aliceKey, 120 * WAD);
+        cs[1] = _signed(1, 5, bobKey, 80 * WAD);
 
         uint256 word = _winningWordForBoth(1, 5, alice, bob);
         _settle(1, word, cs);

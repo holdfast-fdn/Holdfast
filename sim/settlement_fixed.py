@@ -117,8 +117,11 @@ class Settlement:
                 minted += new_g - g
                 tile.garrison = new_g
 
-        # phase 2: contests (normative order enforced)
+        # phase 2: contests. STRUCTURAL faults assert (the operator must
+        # never build such a batch — on-chain they revert); STATE-dependent
+        # conditions skip with a recorded reason, mirroring ContestSkipped.
         burned = 0
+        self.skipped = []  # (index, reason) per tick, for parity inspection
         for i, c in enumerate(contests):
             assert 0 <= c.tile_id < len(self.tiles), "BadTileId"
             if i > 0:
@@ -127,11 +130,27 @@ class Settlement:
                         or (c.tile_id == prev.tile_id
                             and c.committed <= prev.committed)), "BatchNotSorted"
             assert c.committed >= p.min_commit, "CommitTooSmall"
+            # (EIP-712 signature is verified on-chain; the mirror models only
+            #  valid-signature batches — forged ones revert structurally)
+
+            # duplicate attacker within the tile's contiguous group
+            duplicate = any(
+                contests[j].tile_id == c.tile_id
+                and contests[j].attacker == c.attacker
+                for j in range(i - 1, -1, -1)
+                if contests[j].tile_id == c.tile_id)
+            if duplicate:
+                self.skipped.append((i, "DuplicateAttacker"))
+                continue
 
             tile = self.tiles[c.tile_id]
             defender = tile.owner
-            assert c.attacker != defender, "SelfAttack"
-            assert self.escrow.get(c.attacker, 0) >= c.committed, "Insufficient"
+            if c.attacker == defender:
+                self.skipped.append((i, "SelfAttack"))
+                continue
+            if self.escrow.get(c.attacker, 0) < c.committed:
+                self.skipped.append((i, "InsufficientEscrow"))
+                continue
             self.escrow[c.attacker] -= c.committed
 
             word = self._contest_word(tick, c.tile_id, c.attacker)
