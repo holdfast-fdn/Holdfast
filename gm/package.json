@@ -1,0 +1,23 @@
+{
+  "name": "holdfast-gm",
+  "version": "1.0.0",
+  "description": "Holdfast GM service: NL->intent, custodial signing, tick driver",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "type": "module",
+  "dependencies": {
+    "viem": "^2.52.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "private": true
+}

@@ -20,3 +20,7 @@ Thumbs.db
 .env
 .env.*
 *.key
+
+# GM service runtime artifacts — keys & tick state never enter the repo
+gm/keys*.json
+gm/state/
