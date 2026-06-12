@@ -1,66 +1,73 @@
-## Foundry
+# Holdfast contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+On-chain settlement for Holdfast. **GM proposes, chain disposes** — these
+contracts are the "disposes" half: the GM never touches an outcome here.
 
-Foundry consists of:
+## Contracts
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+| File | Role |
+|---|---|
+| `src/ResolverLib.sol` | Pure contest math. Bit-for-bit mirror of `sim/resolver_fixed.py` (the spec). |
+| `src/FluxToken.sol` | Minimal ERC-20. Settlement is the sole minter; anyone burns their own balance. |
+| `src/HoldfastSettlement.sol` | Escrow + tile registry + per-tick settlement. One tick = one settlement transaction per region. |
 
-## Documentation
+## The tick flow (commit → randomness → settle)
 
-https://book.getfoundry.sh/
+1. **`openTick(regionId, tick, batchHash)`** — operator commits the hash of
+   the contest batch BEFORE any randomness exists. Reopening after a word
+   was drawn voids the word and increments a public counter (an honest
+   operator's counter stays at 0 — grinding is visible to everyone).
+2. **`fulfillWord(regionId, tick, word)`** — the randomness provider
+   delivers the tick word. Immutable once set.
+3. **`settleTick(regionId, tick, bucket2Root, contests)`** — the batch must
+   hash to the commitment. Emission first (yield + garrison regen, both
+   minted), then contests resolved on-chain via ResolverLib. Every intent
+   carries the player's EIP-712 signature: the operator can censor, never
+   forge.
 
-## Usage
+Per-contest randomness: `keccak256(word ‖ regionId ‖ tick ‖ tileId ‖ attacker)`.
 
-### Build
+## Build & test
 
-```shell
-$ forge build
+```bash
+forge build
+forge test          # 26 tests: parity gates + fuzz properties + flows
 ```
 
-### Test
+The parity tests are GENERATED from the Python spec — never edit them by
+hand. Regenerate after any spec change:
 
-```shell
-$ forge test
+```bash
+cd ../sim
+python3 gen_parity_fixtures.py      # contest-math fixtures
+python3 gen_settlement_parity.py    # 6-tick signed-war replay
 ```
 
-### Format
+## Deploy (Base Sepolia)
 
-```shell
-$ forge fmt
+```bash
+export OPERATOR=0x...              # tick-driver service wallet
+export RANDOMNESS_PROVIDER=0x...   # testnet: trusted EOA
+forge script script/Deploy.s.sol \
+  --rpc-url base_sepolia --broadcast \
+  --private-key "$PRIVATE_KEY"
 ```
 
-### Gas Snapshots
+Never put keys in this repo or any Hermes-loaded environment (CLAUDE.md).
 
-```shell
-$ forge snapshot
-```
+Post-deploy, as owner:
+1. `createRegion(regionId, params, owners, garrisons, mods)` — use the
+   BALANCE.md rev2 params (δ=1.3e18, γ=β=3e17, yield=4e18, regen=2e18,
+   cap=200e18, minCommit=20e18); 9 tiles, player homes once the roster is
+   known, the rest `address(0)` (wilds).
+2. `enroll(players, 250e18)` — testnet starting escrow (replace with a
+   reviewed distribution before any value deployment).
 
-### Anvil
+## Production randomness
 
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+For any deployment where Flux has value, `randomnessProvider` must be a
+verifying VRF consumer contract (recommended: Chainlink VRF v2.5 on Base)
+that forwards `fulfillWord` from its callback. Write that adapter against
+the CURRENT official Chainlink docs (coordinator address, key hash, request
+ABI) at deploy time — do not trust memorized constants. The trust analysis
+lives in `docs/AUDIT.md` (see M-2).

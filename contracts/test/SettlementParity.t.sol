@@ -20,6 +20,7 @@ contract SettlementParityTest is Test {
     address internal constant BOB =
         0x0376AAc07Ad725E01357B1725B5ceC61aE10473c;
     address internal constant OPERATOR = address(uint160(0xC0DE));
+    address internal constant PROVIDER = address(uint160(0xFEED));
 
     FluxToken flux;
     HoldfastSettlement st;
@@ -33,6 +34,7 @@ contract SettlementParityTest is Test {
         st = new HoldfastSettlement(flux);
         flux.setMinter(address(st));
         st.setOperator(OPERATOR);
+        st.setRandomnessProvider(PROVIDER);
 
         address[] memory owners = new address[](9);
         uint256[] memory garrisons = new uint256[](9);
@@ -96,7 +98,11 @@ contract SettlementParityTest is Test {
         cs[0] = _signed(1, 5, ALICE_PK, 120000000000000000000, 1000000000000000000);
         cs[1] = _signed(1, 7, BOB_PK, 100000000000000000000, 1000000000000000000);
         vm.prank(OPERATOR);
-        st.settleTick(0, 1, 3237998081, bytes32(uint256(1)), cs);
+        st.openTick(0, 1, keccak256(abi.encode(cs)));
+        vm.prank(PROVIDER);
+        st.fulfillWord(0, 1, 3237998081);
+        vm.prank(OPERATOR);
+        st.settleTick(0, 1, bytes32(uint256(1)), cs);
         assertEq(st.escrow(ALICE), 152600000000000000000, "alice escrow tick 1");
         assertEq(st.escrow(BOB), 172600000000000000000, "bob escrow tick 1");
         assertEq(flux.totalSupply(), 1059200000000000000000, "supply tick 1");
@@ -105,7 +111,11 @@ contract SettlementParityTest is Test {
         cs[0] = _signed(2, 1, BOB_PK, 55000000000000000000, 1000000000000000000);
         cs[1] = _signed(2, 2, ALICE_PK, 60000000000000000000, 1000000000000000000);
         vm.prank(OPERATOR);
-        st.settleTick(0, 2, 3237998082, bytes32(uint256(2)), cs);
+        st.openTick(0, 2, keccak256(abi.encode(cs)));
+        vm.prank(PROVIDER);
+        st.fulfillWord(0, 2, 3237998082);
+        vm.prank(OPERATOR);
+        st.settleTick(0, 2, bytes32(uint256(2)), cs);
         assertEq(st.escrow(ALICE), 119800000000000000000, "alice escrow tick 2");
         assertEq(st.escrow(BOB), 125600000000000000000, "bob escrow tick 2");
         assertEq(flux.totalSupply(), 993400000000000000000, "supply tick 2");
@@ -113,7 +123,11 @@ contract SettlementParityTest is Test {
         cs = new HoldfastSettlement.ContestInput[](1);
         cs[0] = _signed(3, 0, BOB_PK, 90000000000000000000, 1200000000000000000);
         vm.prank(OPERATOR);
-        st.settleTick(0, 3, 3237998083, bytes32(uint256(3)), cs);
+        st.openTick(0, 3, keccak256(abi.encode(cs)));
+        vm.prank(PROVIDER);
+        st.fulfillWord(0, 3, 3237998083);
+        vm.prank(OPERATOR);
+        st.settleTick(0, 3, bytes32(uint256(3)), cs);
         assertEq(st.escrow(ALICE), 131800000000000000000, "alice escrow tick 3");
         assertEq(st.escrow(BOB), 75400000000000000000, "bob escrow tick 3");
         assertEq(flux.totalSupply(), 957200000000000000000, "supply tick 3");
@@ -121,7 +135,11 @@ contract SettlementParityTest is Test {
         cs = new HoldfastSettlement.ContestInput[](1);
         cs[0] = _signed(4, 3, ALICE_PK, 80000000000000000000, 1000000000000000000);
         vm.prank(OPERATOR);
-        st.settleTick(0, 4, 3237998084, bytes32(uint256(4)), cs);
+        st.openTick(0, 4, keccak256(abi.encode(cs)));
+        vm.prank(PROVIDER);
+        st.fulfillWord(0, 4, 3237998084);
+        vm.prank(OPERATOR);
+        st.settleTick(0, 4, bytes32(uint256(4)), cs);
         assertEq(st.escrow(ALICE), 59800000000000000000, "alice escrow tick 4");
         assertEq(st.escrow(BOB), 111400000000000000000, "bob escrow tick 4");
         assertEq(flux.totalSupply(), 939200000000000000000, "supply tick 4");
@@ -130,7 +148,11 @@ contract SettlementParityTest is Test {
         cs[0] = _signed(5, 6, ALICE_PK, 60000000000000000000, 1000000000000000000);
         cs[1] = _signed(5, 6, BOB_PK, 55000000000000000000, 1000000000000000000);
         vm.prank(OPERATOR);
-        st.settleTick(0, 5, 3237998085, bytes32(uint256(5)), cs);
+        st.openTick(0, 5, keccak256(abi.encode(cs)));
+        vm.prank(PROVIDER);
+        st.fulfillWord(0, 5, 3237998085);
+        vm.prank(OPERATOR);
+        st.settleTick(0, 5, bytes32(uint256(5)), cs);
         assertEq(st.escrow(ALICE), 45300000000000000000, "alice escrow tick 5");
         assertEq(st.escrow(BOB), 68400000000000000000, "bob escrow tick 5");
         assertEq(flux.totalSupply(), 889700000000000000000, "supply tick 5");
@@ -139,7 +161,11 @@ contract SettlementParityTest is Test {
         cs[0] = _signed(6, 4, BOB_PK, 200000000000000000000, 1000000000000000000);
         cs[1] = _signed(6, 8, ALICE_PK, 30000000000000000000, 1000000000000000000);
         vm.prank(OPERATOR);
-        st.settleTick(0, 6, 3237998086, bytes32(uint256(6)), cs);
+        st.openTick(0, 6, keccak256(abi.encode(cs)));
+        vm.prank(PROVIDER);
+        st.fulfillWord(0, 6, 3237998086);
+        vm.prank(OPERATOR);
+        st.settleTick(0, 6, bytes32(uint256(6)), cs);
         assertEq(st.escrow(ALICE), 27300000000000000000, "alice escrow tick 6");  // mirror skipped: #0 InsufficientEscrow
         assertEq(st.escrow(BOB), 80400000000000000000, "bob escrow tick 6");
         assertEq(flux.totalSupply(), 901700000000000000000, "supply tick 6");

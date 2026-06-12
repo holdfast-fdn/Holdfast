@@ -13,6 +13,7 @@ contract SettlementTest is Test {
     HoldfastSettlement st;
 
     address operator = makeAddr("operator");
+    address provider = makeAddr("provider");
     address alice;
     uint256 aliceKey;
     address bob;
@@ -31,6 +32,7 @@ contract SettlementTest is Test {
         st = new HoldfastSettlement(flux);
         flux.setMinter(address(st));
         st.setOperator(operator);
+        st.setRandomnessProvider(provider);
 
         // demo layout: tile0 alice, tile3 bob, the rest wilds
         address[] memory owners = new address[](TILES);
@@ -96,10 +98,40 @@ contract SettlementTest is Test {
         ));
     }
 
+    /// @dev full honest flow: commit batch -> word -> settle
     function _settle(uint64 tick, uint256 word,
                      HoldfastSettlement.ContestInput[] memory cs) internal {
         vm.prank(operator);
-        st.settleTick(REGION, tick, word, bytes32(uint256(0xB2)), cs);
+        st.openTick(REGION, tick, keccak256(abi.encode(cs)));
+        vm.prank(provider);
+        st.fulfillWord(REGION, tick, word);
+        vm.prank(operator);
+        st.settleTick(REGION, tick, bytes32(uint256(0xB2)), cs);
+    }
+
+    /// @dev open + fulfill only — lets a test expectEmit on the settle call
+    function _prepare(uint64 tick, uint256 word,
+                      HoldfastSettlement.ContestInput[] memory cs) internal {
+        vm.prank(operator);
+        st.openTick(REGION, tick, keccak256(abi.encode(cs)));
+        vm.prank(provider);
+        st.fulfillWord(REGION, tick, word);
+    }
+
+    /// @dev full flow, expecting the final settle call to revert
+    function _settleExpectRevert(
+        uint64 tick,
+        uint256 word,
+        HoldfastSettlement.ContestInput[] memory cs,
+        bytes4 selector
+    ) internal {
+        vm.prank(operator);
+        st.openTick(REGION, tick, keccak256(abi.encode(cs)));
+        vm.prank(provider);
+        st.fulfillWord(REGION, tick, word);
+        vm.prank(operator);
+        vm.expectRevert(selector);
+        st.settleTick(REGION, tick, bytes32(uint256(0xB2)), cs);
     }
 
     function _none() internal pure
@@ -167,9 +199,12 @@ contract SettlementTest is Test {
     }
 
     function test_only_operator_settles() public {
-        vm.prank(mallory);
+        vm.startPrank(mallory);
         vm.expectRevert(HoldfastSettlement.NotOperator.selector);
-        st.settleTick(REGION, 1, 0, 0, _none());
+        st.openTick(REGION, 1, bytes32(0));
+        vm.expectRevert(HoldfastSettlement.NotOperator.selector);
+        st.settleTick(REGION, 1, 0, _none());
+        vm.stopPrank();
     }
 
     function test_region_genesis_guards() public {
@@ -179,19 +214,26 @@ contract SettlementTest is Test {
         vm.expectRevert(HoldfastSettlement.RegionExists.selector);
         st.createRegion(REGION, _params(), o, g, m);
 
-        vm.prank(operator);
+        vm.startPrank(operator);
         vm.expectRevert(HoldfastSettlement.RegionMissing.selector);
-        st.settleTick(42, 1, 0, 0, _none());
+        st.openTick(42, 1, bytes32(0));
+        vm.expectRevert(HoldfastSettlement.RegionMissing.selector);
+        st.settleTick(42, 1, 0, _none());
+        vm.stopPrank();
     }
 
     function test_tick_must_be_monotonic() public {
+        vm.prank(operator);
+        vm.expectRevert(HoldfastSettlement.WrongTick.selector);
+        st.openTick(REGION, 2, bytes32(0)); // skip ahead
+
+        _settle(1, 0, _none());
+
         vm.startPrank(operator);
         vm.expectRevert(HoldfastSettlement.WrongTick.selector);
-        st.settleTick(REGION, 2, 0, 0, _none()); // skip ahead
-
-        st.settleTick(REGION, 1, 0, 0, _none());
+        st.openTick(REGION, 1, bytes32(0)); // reopen a settled tick
         vm.expectRevert(HoldfastSettlement.WrongTick.selector);
-        st.settleTick(REGION, 1, 0, 0, _none()); // replay
+        st.settleTick(REGION, 1, 0, _none()); // replay a settled tick
         vm.stopPrank();
     }
 
@@ -220,16 +262,12 @@ contract SettlementTest is Test {
         // same tile, ascending committed — violates desc-committed rule
         cs[0] = _signed(1, 5, aliceKey, 30 * WAD);
         cs[1] = _signed(1, 5, bobKey, 40 * WAD);
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BatchNotSorted.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.BatchNotSorted.selector);
 
         // descending tileIds — violates ascending-tile rule
         cs[0] = _signed(1, 6, aliceKey, 30 * WAD);
         cs[1] = _signed(1, 5, bobKey, 40 * WAD);
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BatchNotSorted.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.BatchNotSorted.selector);
     }
 
     function test_structural_guards_revert() public {
@@ -237,14 +275,10 @@ contract SettlementTest is Test {
             new HoldfastSettlement.ContestInput[](1);
 
         cs[0] = _signed(1, 99, aliceKey, 30 * WAD); // no such tile
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BadTileId.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.BadTileId.selector);
 
         cs[0] = _signed(1, 5, aliceKey, 19 * WAD); // below minCommit
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.CommitTooSmall.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.CommitTooSmall.selector);
     }
 
     function test_forged_intent_reverts() public {
@@ -254,23 +288,17 @@ contract SettlementTest is Test {
         // operator tries to commit ALICE's escrow with BOB's signature
         cs[0] = _signed(1, 5, bobKey, 30 * WAD);
         cs[0].attacker = alice;
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.BadSignature.selector);
 
         // tampered amount: signed 30, submitted 200 (>= minCommit)
         cs[0] = _signed(1, 5, aliceKey, 30 * WAD);
         cs[0].committed = 200 * WAD;
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.BadSignature.selector);
 
         // garbage v
         cs[0] = _signed(1, 5, aliceKey, 30 * WAD);
         cs[0].sigV = 26;
-        vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
-        st.settleTick(REGION, 1, 0, 0, cs);
+        _settleExpectRevert(1, 0, cs, HoldfastSettlement.BadSignature.selector);
     }
 
     function test_intent_cannot_replay_another_tick() public {
@@ -280,9 +308,81 @@ contract SettlementTest is Test {
         signedForTick1[0] = _signed(1, 5, aliceKey, 30 * WAD);
 
         _settle(1, 0, _none());
+        _settleExpectRevert(2, 0, signedForTick1,
+            HoldfastSettlement.BadSignature.selector);
+    }
+
+    // ------------------------------------------------------------------
+    // randomness flow: commit batch -> word -> settle
+    // ------------------------------------------------------------------
+    function test_randomness_flow_guards() public {
+        HoldfastSettlement.ContestInput[] memory cs = _none();
+        bytes32 bh = keccak256(abi.encode(cs));
+
+        // settle before open
         vm.prank(operator);
-        vm.expectRevert(HoldfastSettlement.BadSignature.selector);
-        st.settleTick(REGION, 2, 0, 0, signedForTick1);
+        vm.expectRevert(HoldfastSettlement.TickNotOpen.selector);
+        st.settleTick(REGION, 1, 0, cs);
+
+        vm.prank(operator);
+        st.openTick(REGION, 1, bh);
+
+        // settle before the word exists
+        vm.prank(operator);
+        vm.expectRevert(HoldfastSettlement.WordNotSet.selector);
+        st.settleTick(REGION, 1, 0, cs);
+
+        // only the provider may fulfill
+        vm.prank(mallory);
+        vm.expectRevert(HoldfastSettlement.NotProvider.selector);
+        st.fulfillWord(REGION, 1, 7);
+
+        vm.prank(provider);
+        st.fulfillWord(REGION, 1, 7);
+
+        // the word is immutable once set
+        vm.prank(provider);
+        vm.expectRevert(HoldfastSettlement.WordAlreadySet.selector);
+        st.fulfillWord(REGION, 1, 8);
+
+        // a batch that doesn't hash to the commitment is rejected
+        HoldfastSettlement.ContestInput[] memory other =
+            new HoldfastSettlement.ContestInput[](1);
+        other[0] = _signed(1, 5, aliceKey, 30 * WAD);
+        vm.prank(operator);
+        vm.expectRevert(HoldfastSettlement.BatchMismatch.selector);
+        st.settleTick(REGION, 1, 0, other);
+
+        // the committed batch settles fine
+        vm.prank(operator);
+        st.settleTick(REGION, 1, 0, cs);
+        _assertSolvent();
+    }
+
+    function test_reopen_is_public_and_voids_word() public {
+        vm.prank(operator);
+        st.openTick(REGION, 1, keccak256(abi.encode(_none())));
+        vm.prank(provider);
+        st.fulfillWord(REGION, 1, 7);
+
+        // the operator saw the word and tries to swap the batch:
+        // allowed, but it voids the word and increments a public counter
+        HoldfastSettlement.ContestInput[] memory cs2 =
+            new HoldfastSettlement.ContestInput[](1);
+        cs2[0] = _signed(1, 5, aliceKey, 30 * WAD);
+        vm.expectEmit(true, true, false, true);
+        emit HoldfastSettlement.TickReopened(REGION, 1, 1);
+        vm.prank(operator);
+        st.openTick(REGION, 1, keccak256(abi.encode(cs2)));
+
+        (, , bool wordSet, uint32 reopens, ,) = st.pending(REGION);
+        assertEq(wordSet, false, "old word must be void");
+        assertEq(reopens, 1, "grinding counter must tick up");
+
+        // cannot settle until fresh randomness arrives
+        vm.prank(operator);
+        vm.expectRevert(HoldfastSettlement.WordNotSet.selector);
+        st.settleTick(REGION, 1, 0, cs2);
     }
 
     function test_state_conditions_skip_not_revert() public {
@@ -295,11 +395,13 @@ contract SettlementTest is Test {
         cs[1] = _signed(1, 5, aliceKey, 120 * WAD);
 
         uint256 word = _winningWordFor(1, 5, alice);
+        _prepare(1, word, cs);
         vm.expectEmit(true, true, false, true);
         emit HoldfastSettlement.ContestSkipped(
             REGION, 1, 4, mallory,
             HoldfastSettlement.SkipReason.InsufficientEscrow);
-        _settle(1, word, cs);
+        vm.prank(operator);
+        st.settleTick(REGION, 1, bytes32(uint256(0xB2)), cs);
 
         (address tOwner,,) = st.tiles(REGION, 5);
         assertEq(tOwner, alice, "alice's contest must still settle");
@@ -312,10 +414,12 @@ contract SettlementTest is Test {
             new HoldfastSettlement.ContestInput[](1);
         cs[0] = _signed(1, 0, aliceKey, 30 * WAD); // alice owns tile 0
 
+        _prepare(1, 0, cs);
         vm.expectEmit(true, true, false, true);
         emit HoldfastSettlement.ContestSkipped(
             REGION, 1, 0, alice, HoldfastSettlement.SkipReason.SelfAttack);
-        _settle(1, 0, cs);
+        vm.prank(operator);
+        st.settleTick(REGION, 1, bytes32(uint256(0xB2)), cs);
 
         // nothing deducted beyond the yield she earned
         assertEq(st.escrow(alice), 254 * WAD);
@@ -330,11 +434,13 @@ contract SettlementTest is Test {
         cs[1] = _signed(1, 5, aliceKey, 30 * WAD);
 
         uint256 word = _losingWordFor(1, 5, alice); // hold, simpler math
+        _prepare(1, word, cs);
         vm.expectEmit(true, true, false, true);
         emit HoldfastSettlement.ContestSkipped(
             REGION, 1, 5, alice,
             HoldfastSettlement.SkipReason.DuplicateAttacker);
-        _settle(1, word, cs);
+        vm.prank(operator);
+        st.settleTick(REGION, 1, bytes32(uint256(0xB2)), cs);
 
         // start + yield - one 40 commit (30% of which burns vs the wilds)
         assertEq(st.escrow(alice), (250 + 4 - 40) * WAD);

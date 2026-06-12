@@ -41,6 +41,24 @@ contract HoldfastSettlement {
     address public immutable owner;
     /// @notice tick driver (the Hermes-side service wallet).
     address public operator;
+    /// @notice sole source of tick randomness. Testnet: a trusted EOA.
+    ///         Production: a VRF consumer contract (e.g. Chainlink VRF v2.5
+    ///         adapter) that forwards verified words — swap is pure config.
+    address public randomnessProvider;
+
+    /// @dev one tick in flight per region: the operator must commit the
+    ///      batch hash BEFORE the random word exists, so the word can never
+    ///      influence which contests are included (no post-word censorship,
+    ///      no outcome shopping by exclusion).
+    struct PendingTick {
+        uint64 tick;
+        bool open;
+        bool wordSet;
+        uint32 reopens;   // public grinding counter — honest ops stay at 0
+        bytes32 batchHash;
+        uint256 word;
+    }
+    mapping(uint256 regionId => PendingTick) public pending;
 
     struct RegionParams {
         uint256 delta;         // defender advantage, WAD
@@ -101,6 +119,13 @@ contract HoldfastSettlement {
     event Enrolled(address indexed player, uint256 startingEscrow);
     event RegionCreated(uint256 indexed regionId, uint64 tileCount);
     event OperatorSet(address indexed operator);
+    event RandomnessProviderSet(address indexed provider);
+    event TickOpened(
+        uint256 indexed regionId, uint64 indexed tick, bytes32 batchHash);
+    event TickReopened(
+        uint256 indexed regionId, uint64 indexed tick, uint32 reopens);
+    event WordFulfilled(
+        uint256 indexed regionId, uint64 indexed tick, uint256 word);
     event ContestSettled(
         uint256 indexed regionId,
         uint64 indexed tick,
@@ -140,6 +165,11 @@ contract HoldfastSettlement {
     error CommitTooSmall();
     error TransferFailed();
     error BadSignature();
+    error NotProvider();
+    error TickNotOpen();
+    error WordAlreadySet();
+    error WordNotSet();
+    error BatchMismatch();
 
     constructor(FluxToken flux_) {
         if (address(flux_) == address(0)) revert ZeroAddress();
@@ -164,6 +194,13 @@ contract HoldfastSettlement {
         if (operator_ == address(0)) revert ZeroAddress();
         operator = operator_;
         emit OperatorSet(operator_);
+    }
+
+    function setRandomnessProvider(address provider_) external {
+        if (msg.sender != owner) revert NotOwner();
+        if (provider_ == address(0)) revert ZeroAddress();
+        randomnessProvider = provider_;
+        emit RandomnessProviderSet(provider_);
     }
 
     /// @notice Region genesis. Initial garrisons are minted into escrow here
@@ -241,10 +278,51 @@ contract HoldfastSettlement {
     }
 
     // ------------------------------------------------------------------
-    // the tick
+    // the tick: commit batch -> draw randomness -> settle
     // ------------------------------------------------------------------
-    /// @notice Settle one tick for one region — emission first, then every
-    ///         contest, mirroring `sim/world_sim.py` phase order.
+    /// @notice Step 1 — commit the tick's batch hash BEFORE any randomness
+    ///         exists. Reopening (a different batch after a word was already
+    ///         drawn) voids the word, requires a fresh draw, and increments a
+    ///         public counter — an honest operator's counter stays at zero,
+    ///         so grinding attempts are visible to everyone.
+    function openTick(uint256 regionId, uint64 tick, bytes32 batchHash)
+        external
+    {
+        if (msg.sender != operator) revert NotOperator();
+        Region storage region = regions[regionId];
+        if (!region.exists) revert RegionMissing();
+        if (tick != region.lastTick + 1) revert WrongTick();
+
+        PendingTick storage pt = pending[regionId];
+        if (pt.open && pt.wordSet) {
+            pt.reopens += 1;
+            emit TickReopened(regionId, tick, pt.reopens);
+        }
+        pt.tick = tick;
+        pt.open = true;
+        pt.wordSet = false;
+        pt.batchHash = batchHash;
+        pt.word = 0;
+        emit TickOpened(regionId, tick, batchHash);
+    }
+
+    /// @notice Step 2 — the randomness provider delivers the tick word.
+    ///         One word per opened batch; immutable once set.
+    function fulfillWord(uint256 regionId, uint64 tick, uint256 word)
+        external
+    {
+        if (msg.sender != randomnessProvider) revert NotProvider();
+        PendingTick storage pt = pending[regionId];
+        if (!pt.open || pt.tick != tick) revert TickNotOpen();
+        if (pt.wordSet) revert WordAlreadySet();
+        pt.wordSet = true;
+        pt.word = word;
+        emit WordFulfilled(regionId, tick, word);
+    }
+
+    /// @notice Step 3 — settle: emission first, then every contest,
+    ///         mirroring `sim/world_sim.py` phase order. The submitted batch
+    ///         must hash to the pre-randomness commitment.
     /// @dev Batch ordering is normative and enforced: ascending tileId,
     ///      descending committed within a tile (the spec's collision rule).
     ///      Per-contest randomness is derived from the tick word so no two
@@ -253,7 +331,6 @@ contract HoldfastSettlement {
     function settleTick(
         uint256 regionId,
         uint64 tick,
-        uint256 randomWord,
         bytes32 bucket2Root,
         ContestInput[] calldata contests
     ) external {
@@ -261,6 +338,15 @@ contract HoldfastSettlement {
         Region storage region = regions[regionId];
         if (!region.exists) revert RegionMissing();
         if (tick != region.lastTick + 1) revert WrongTick();
+
+        PendingTick storage pt = pending[regionId];
+        if (!pt.open || pt.tick != tick) revert TickNotOpen();
+        if (!pt.wordSet) revert WordNotSet();
+        if (keccak256(abi.encode(contests)) != pt.batchHash) {
+            revert BatchMismatch();
+        }
+        uint256 randomWord = pt.word;
+        delete pending[regionId];
         region.lastTick = tick;
 
         RegionParams memory p = region.params;

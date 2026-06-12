@@ -56,15 +56,28 @@ arising from earlier same-tick conquests, duplicates) → **skip** with a
 settlement parity gate (the generated 6-tick war includes a forced skip).
 Tests: `test_state_conditions_skip_not_revert`, `test_self_attack_skips`.
 
-### M-2 (OPEN, accepted for closed testnet) — Operator chooses `randomWord`
+### M-2 (substantially mitigated; residual accepted for closed testnet) — tick randomness
 
-The operator can grind candidate words off-chain and submit one whose
-derived rolls favor chosen outcomes. Signatures do not mitigate this.
-Accepted ONLY because the Phase-4 playtest runs on testnet with a trusted
-operator and zero-value Flux; **a real VRF (recommended: Chainlink VRF v2.5
-on Base) is mandatory before any deployment where Flux has value.** The
-word is committed in `TickSettled` so grinding is at least publicly
-auditable after the fact.
+Original issue: the operator both chose the batch AND supplied `randomWord`
+in one call — it could grind words for favorable rolls, or watch a word and
+then censor specific contests.
+
+**Structural fix (commit-then-randomness):** the tick is now three steps —
+`openTick(batchHash)` commits the batch BEFORE any randomness exists;
+`fulfillWord` is callable only by a separate `randomnessProvider` and the
+word is immutable once set; `settleTick` requires the submitted batch to
+hash to the pre-randomness commitment. Re-opening a tick after a word was
+drawn voids the word, forces a fresh draw, and increments a PUBLIC
+`reopens` counter + `TickReopened` event — an honest operator's counter
+stays at zero, so any grinding attempt is visible on-chain.
+Tests: `test_randomness_flow_guards`, `test_reopen_is_public_and_voids_word`.
+
+**Residual (accepted, testnet only):** on the closed playtest the provider
+is a trusted EOA — operator+provider collusion could still grind via
+public reopens (auditable, bounded by reopen events). For any deployment
+where Flux has value, the provider MUST be a verifying VRF consumer
+contract (recommended: Chainlink VRF v2.5 on Base; write the adapter
+against current official docs at deploy time — see contracts/README.md).
 
 ### L-1 (accepted, documented) — Bucket-2 modifiers are operator-supplied
 

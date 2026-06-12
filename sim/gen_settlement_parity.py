@@ -77,7 +77,13 @@ def main():
                 f"{PK_NAME[c.attacker]}, {c.committed}, {c.attacker_mod});")
         lines.append("        vm.prank(OPERATOR);")
         lines.append(
-            f"        st.settleTick({REGION}, {tick}, {WORDS[tick]}, "
+            f"        st.openTick({REGION}, {tick}, keccak256(abi.encode(cs)));")
+        lines.append("        vm.prank(PROVIDER);")
+        lines.append(
+            f"        st.fulfillWord({REGION}, {tick}, {WORDS[tick]});")
+        lines.append("        vm.prank(OPERATOR);")
+        lines.append(
+            f"        st.settleTick({REGION}, {tick}, "
             f"bytes32(uint256({tick})), cs);")
         skipnote = (f"  // mirror skipped: "
                     + ", ".join(f"#{i} {r}" for i, r in s.skipped)
@@ -124,6 +130,7 @@ contract SettlementParityTest is Test {{
     address internal constant BOB =
         {checksummed(BOB)};
     address internal constant OPERATOR = address(uint160(0xC0DE));
+    address internal constant PROVIDER = address(uint160(0xFEED));
 
     FluxToken flux;
     HoldfastSettlement st;
@@ -137,6 +144,7 @@ contract SettlementParityTest is Test {{
         st = new HoldfastSettlement(flux);
         flux.setMinter(address(st));
         st.setOperator(OPERATOR);
+        st.setRandomnessProvider(PROVIDER);
 
         address[] memory owners = new address[](9);
         uint256[] memory garrisons = new uint256[](9);
