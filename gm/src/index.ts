@@ -29,7 +29,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { startAgentApi } from "./agentApi.js";
 import { AgentIntentPool } from "./agentPool.js";
-import { HoldfastBot, HttpTelegramTransport } from "./bot.js";
+import { HoldfastBot, HttpTelegramTransport, BOT_COMMANDS } from "./bot.js";
 import { ComputeMeter } from "./computeMeter.js";
 import {
   loadArtifact, makeComputeSink, makeEscrowReader, makeTickSummaryReader,
@@ -121,7 +121,16 @@ async function main(): Promise<void> {
   const narrator: Narrator = hermes
     ? new HermesNarrator(hermes, new TemplateNarrator())
     : new TemplateNarrator();
-  const bot = new HoldfastBot(transport, parser, pool, signer);
+  // Live-map deep link for the Telegram buttons — opens the companion centred
+  // on the player's own holdings. WEB_BASE points at the deployed frontend.
+  const webBase = env("WEB_BASE", "https://holdfast.foundation").replace(/\/$/, "");
+  const mapUrl = (address?: string): string =>
+    `${webBase}/holdfast-isles.html?region=${regionId}` +
+    `&rpc=${encodeURIComponent(rpc)}&settlement=${settlement}` +
+    (address ? `&me=${address}` : "");
+  const bot = new HoldfastBot(transport, parser, pool, signer, { mapUrl });
+  // register the "/" command menu so humans see the commands (best-effort)
+  await transport.setCommands(BOT_COMMANDS);
 
   // AI factions (the world moves while you sleep). FACTIONS env, e.g.
   // "ashen:Ashen Horde:raider,iron:Iron Pact:turtle". With Hermes each gets
@@ -257,7 +266,10 @@ async function main(): Promise<void> {
 
   console.log(`@HoldfastGM up — region ${regionId}, ` +
     (timer ? `tick every ${intervalMs}ms` : "auto-tick disabled (manual)"));
-  await transport.poll((msg) => bot.onMessage(msg));
+  await transport.poll(
+    (msg) => bot.onMessage(msg),
+    (cb) => bot.onCallback(cb),
+  );
 }
 
 main().catch((err) => {
