@@ -56,6 +56,23 @@ only the recent window (history → indexer, Phase 5). Read-after-write lag
 on the load-balanced public RPC is handled by polling for the TickSettled
 event before narrating.
 
+## First real player tick — 2026-06-13
+
+The full loop ran with a human in the loop, end to end through the live
+@holdfast_gmbot:
+
+1. Player messaged the bot, `/wallet` minted their custodial session
+   identity (`0xFdE2…F868`); owner `enroll`ed 250 Flux escrow.
+2. Player: "attack tile 5 with 250 flux" → parsed → queued.
+3. Operator fired the manual tick trigger → the bot drained its own pool,
+   EIP-712-signed the order with the player's session wallet, and settled
+   tick 2 on chain ([settle tx](https://sepolia.basescan.org/tx/0xb88d2ccae3ab4641d6c096114b3a8e1c70c5bfeb78b0e60e0899d6bcd0d2fc4e)).
+4. Honest VRF: chance 60.3%, rolled 29.9% → **player took tile 5 from the
+   wilds**, garrison 250, +19.2 Flux spoils. Herald DM'd the report.
+5. Companion renders the conquest (gold tile, You 1/9) live from the RPC.
+
+This is the Phase-3/4 exit criterion demonstrated on the public testnet.
+
 ## Operational checklist (to start the playtest)
 
 1. `enroll([players], 250e18)` as owner once the roster is known.
