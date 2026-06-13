@@ -76,4 +76,19 @@ describe("HoldfastBot", () => {
     expect(pool.size()).toBe(0);
     expect(transport.last()).toContain("could not read an order");
   });
+
+  it("/wallet returns the player's session address when a signer is set", async () => {
+    const fakeSigner = {
+      wallet: (h: string) => ({ address: `0xWALLET_${h}` }),
+    };
+    const withSigner = new HoldfastBot(
+      transport, new RuleBasedParser(), pool, fakeSigner);
+    await withSigner.onMessage(msg("/wallet"));
+    expect(transport.last()).toContain("0xWALLET_tg:42");
+  });
+
+  it("/wallet explains it is off when no signer is wired", async () => {
+    await bot.onMessage(msg("/wallet"));
+    expect(transport.last()).toContain("not provisioned yet");
+  });
 });

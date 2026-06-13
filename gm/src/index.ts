@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const pool = new IntentPool();
   const signer = new CustodialSigner(env("KEYSTORE_PATH"));
   const transport = new HttpTelegramTransport(env("TELEGRAM_BOT_TOKEN"));
-  const bot = new HoldfastBot(transport, new RuleBasedParser(), pool);
+  const bot = new HoldfastBot(transport, new RuleBasedParser(), pool, signer);
 
   const scheduler = new TickScheduler({
     regionId,

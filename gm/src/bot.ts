@@ -21,6 +21,11 @@ export interface TelegramTransport {
   send(chatId: number | string, text: string): Promise<void>;
 }
 
+/** resolves a player handle to their custodial session address (CustodialSigner) */
+export interface WalletResolver {
+  wallet(handle: string): { address: string };
+}
+
 const HELP = [
   "I am the Herald. Speak your orders and I carry them to the isles.",
   "",
@@ -29,6 +34,7 @@ const HELP = [
   "  raid tile_03, commit 80",
   "",
   "/orders — what you have queued for the next tick",
+  "/wallet — your on-chain identity in the isles",
   "/help   — this message",
   "",
   "Orders lock at tick close. The chain decides; I only carry the word.",
@@ -39,6 +45,8 @@ export class HoldfastBot {
     private readonly transport: TelegramTransport,
     private readonly parser: NLIntentParser,
     private readonly pool: IntentPool,
+    /** optional — enables /wallet; without it the command explains it's off */
+    private readonly signer?: WalletResolver,
   ) {}
 
   async onMessage(msg: IncomingMessage): Promise<void> {
@@ -48,6 +56,20 @@ export class HoldfastBot {
 
     if (text === "/start" || text === "/help") {
       await this.transport.send(msg.chatId, HELP);
+      return;
+    }
+    if (text === "/wallet") {
+      if (!this.signer) {
+        await this.transport.send(msg.chatId,
+          "Your isles identity is not provisioned yet — the Herald will " +
+          "tell you when the world opens.");
+        return;
+      }
+      const addr = this.signer.wallet(handle).address;
+      await this.transport.send(msg.chatId,
+        "Your standard flies under this seal in the isles:\n" +
+        addr + "\n\n" +
+        "The Herald grants your starting Flux to it before the world opens.");
       return;
     }
     if (text === "/orders") {
