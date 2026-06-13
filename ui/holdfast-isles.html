@@ -77,7 +77,35 @@
   @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
   .tkitem{font-size:12.5px;color:#c2cad3}.tkitem b{color:var(--bone)}.tkitem .e{color:var(--gold)}.tkitem .h{color:var(--horde)}.tkitem .p{color:var(--pact)}
   .tkitem .tk{font-family:var(--mono);font-size:10px;color:var(--steel);margin-right:7px}
-  @media(max-width:760px){.stand{display:none}.cmd{width:250px;right:10px}.resbar{flex-direction:column}}
+  /* loading overlay */
+  .loading{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    background:radial-gradient(60% 55% at 50% 45%,rgba(20,30,46,.55),rgba(8,14,26,.92));backdrop-filter:blur(3px);transition:opacity .55s}
+  .loading.gone{opacity:0;pointer-events:none}
+  .loading .spin{width:44px;height:44px;border-radius:50%;border:3px solid rgba(217,168,69,.22);border-top-color:var(--gold);animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading .lt{font-family:var(--display);letter-spacing:3px;font-size:14px}
+  .loading .ls{font-size:11px;color:var(--steel);letter-spacing:1px}
+  /* live status + toast */
+  .stale .dot{background:var(--steel)!important;animation:none!important}
+  .toast{position:absolute;top:78px;left:50%;z-index:15;opacity:0;transform:translate(-50%,-14px);
+    max-width:min(92vw,540px);padding:11px 18px;font-size:13px;line-height:1.45;text-align:center;
+    background:linear-gradient(180deg,rgba(20,28,44,.96),rgba(11,17,30,.97));border:1px solid var(--gold);color:var(--bone);
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+    transition:opacity .4s,transform .4s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .toast.show{opacity:1;transform:translate(-50%,0)}.toast b{color:var(--gold)}.toast .e{color:var(--gold)}.toast .h{color:var(--horde)}
+  /* tile flash on change */
+  @keyframes tileflash{0%{filter:brightness(1)}22%{filter:brightness(1.5) drop-shadow(0 0 16px var(--gold))}100%{filter:brightness(1)}}
+  .flash{animation:tileflash 1.9s ease-out}
+  .panel{transition:opacity .35s}
+  /* mobile */
+  @media(max-width:760px){
+    .crest svg{width:36px;height:36px}.crest .nm{font-size:16px}.crest .sb{font-size:8px;letter-spacing:2px}
+    .crest{top:12px;left:12px;gap:9px}
+    .resbar{top:12px;right:10px;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:58vw}.res{padding:6px 9px}.res .v{font-size:14px}
+    .stand{display:none}
+    .cmd{top:auto;bottom:44px;right:8px;left:8px;width:auto;transform:none;max-height:54vh;overflow:auto}
+    .toast{top:64px}
+  }
 </style>
 </head>
 <body>
@@ -129,6 +157,12 @@
   <div class="panel stand"><div class="ph"><span>Dominion</span><span>9 ISLES</span></div><div id="stand"></div></div>
   <div class="panel cmd" id="cmd"></div>
   <div class="ticker"><div class="tag">WAR LOG</div><div class="tkscroll" id="tk"></div></div>
+  <div class="toast" id="toast"></div>
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <div class="lt" id="loadt">THE SUNDERED ISLES</div>
+    <div class="ls" id="loads">reading the world from chain…</div>
+  </div>
 </div>
 
 <script>
@@ -177,20 +211,21 @@ async function loadLiveWorld(){
   if(!Number(word(reg,2)))throw new Error('region does not exist');
   const n=Math.min(tileCount,9); // mock layout carries 9 positions
   const layout=tiles; // demo entries double as position/art templates
-  const out=[];
-  for(let i=0;i<n;i++){
-    const t=await ethCall(SEL_TILES+hex32(LIVE.region)+hex32(BigInt(i)));
+  // read all tiles in parallel — one round-trip instead of nine
+  const raw=await Promise.all(Array.from({length:n},(_,i)=>
+    ethCall(SEL_TILES+hex32(LIVE.region)+hex32(BigInt(i)))));
+  const out=raw.map((t,i)=>{
     const ownerAddr=addrAt(t,0);
     const gar=Number(word(t,1))/WADF;
     const wild=/^0x0+$/.test(ownerAddr);
-    out.push({...layout[i],
+    return {...layout[i],
       id:String(i+1).padStart(2,'0'),
       owner:wild?'Unclaimed':liveName(ownerAddr),
       ownerAddr,
       gar:Math.round(gar*10)/10,
       since:null,
-      last:wild?'Held by the wilds':'Read from chain'});
-  }
+      last:wild?'Held by the wilds':'Read from chain'};
+  });
   // recent war log from ContestSettled events. Public RPCs (Base) cap
   // eth_getLogs to a 2000-block window, so scan only the recent tail —
   // history is the indexer's job, not the companion's.
@@ -433,7 +468,7 @@ function drawIslands(){
   tiles.forEach((t,i)=>{
     const col=colorOf(t);const blob=blobs[t.sh];
     const biome=biomeOf(t);const top=TOP[biome];
-    const wrap=el('g',{class:'island'});wrap.onclick=()=>select(i);
+    const wrap=el('g',{class:'island',id:'isle'+i});wrap.onclick=()=>select(i);
     const art=ISLAND_ART(i);const sp=sprites[art];const useSprite=!!(sp&&sp.ok);
 
     // anchored water dressing (sprites/sky need none of it)
@@ -546,22 +581,73 @@ function renderTicker(){
     s.className='tkitem';s.innerHTML='<span class="tk">'+l.tk+'</span>'+l.tx;tk.appendChild(s);});
 }
 
+/* ---------------- live status, auto-refresh & notifications ---------------- */
+const $=id=>document.getElementById(id);
+let lastKnownTick=-1, lastFetch=0;
+
+function diffChanges(before,after){
+  const m={};before.forEach(t=>m[t.id]={o:t.ownerAddr,g:t.gar});
+  const ch=[];after.forEach((t,i)=>{const b=m[t.id];
+    if(b&&(b.o!==t.ownerAddr||b.g!==t.gar))ch.push(i);});
+  return ch;
+}
+function flash(idx){idx.forEach(i=>{const g=$('isle'+i);
+  if(g){g.classList.add('flash');setTimeout(()=>g.classList.remove('flash'),2000);}});}
+function toast(html){const t=$('toast');t.innerHTML=html;t.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),6500);}
+function updateResbar(w){
+  const isWild=a=>/^0x0+$/.test(a);
+  const claimed=w.tiles.filter(t=>!isWild(t.ownerAddr)).length;
+  const powers=new Set(w.tiles.filter(t=>!isWild(t.ownerAddr)).map(t=>t.ownerAddr.toLowerCase())).size;
+  const r=document.querySelectorAll('.resbar .res');
+  if(r[0]){r[0].querySelector('.k').textContent='Claimed';r[0].querySelector('.v').textContent=claimed+'/'+w.tiles.length;}
+  if(r[1]){r[1].querySelector('.k').textContent=powers===1?'Power':'Powers';r[1].querySelector('.v').textContent=powers;}
+}
+function setStatus(fresh,tick){
+  const c=document.querySelector('.res.clock');if(!c)return;
+  c.classList.toggle('stale',!fresh);
+  if(fresh){lastFetch=Date.now();if(tick!=null)c.querySelector('.v').dataset.tick=tick;}
+}
+function tickAge(){
+  const v=document.querySelector('.res.clock .v');if(!v||v.dataset.tick==null)return;
+  const ago=Math.max(0,Math.round((Date.now()-lastFetch)/1000));
+  v.textContent='Tick '+v.dataset.tick+' · '+(ago<2?'now':ago+'s ago');
+}
+async function refreshLive(initial){
+  try{
+    const before=tiles.map(t=>({id:t.id,ownerAddr:t.ownerAddr,gar:t.gar}));
+    const w=await loadLiveWorld();
+    setStatus(true,w.lastTick);
+    if(initial||w.lastTick!==lastKnownTick){
+      const ch=diffChanges(before,w.tiles);
+      tiles.length=0;w.tiles.forEach(t=>tiles.push(t));
+      if(w.logs&&w.logs.length)warLogs=w.logs;
+      drawIslands();renderStand();renderTicker();updateResbar(w);
+      select(Math.min(selected,tiles.length-1));
+      if(!initial&&ch.length){flash(ch);
+        toast('⚔ <b>Tick '+w.lastTick+'</b> settled'+(w.logs[0]?' — '+w.logs[0].tx:''));}
+      lastKnownTick=w.lastTick;
+    }
+    return true;
+  }catch(e){setStatus(false);console.warn('live refresh failed:',e.message);return false;}
+}
+function hideLoading(){const l=$('loading');l.classList.add('gone');setTimeout(()=>l.style.display='none',650);}
+
 if(!LIVE.rpc){ // the mock countdown belongs to demo mode only
   let secs=43084;setInterval(()=>{secs--;const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');document.getElementById('timer').textContent=h+':'+m+':'+s;},1000);
 }
 
 preloadAssets().then(async()=>{
+  let live=false;
   if(LIVE.rpc&&LIVE.settlement){
-    try{
-      const w=await loadLiveWorld();
-      tiles.length=0;w.tiles.forEach(t=>tiles.push(t));
-      if(w.logs.length)warLogs=w.logs;
-      document.querySelector('.clock .k').innerHTML='<span class="dot"></span>LIVE · on-chain';
-      document.getElementById('timer').textContent='Tick '+w.lastTick+' settled';
-    }catch(e){console.warn('live mode unavailable -> demo data:',e);}
-  }
-  drawSea();drawCaustics();drawStones();drawClouds();drawIslands();drawAirship();
-  renderTicker();renderStand();select(Math.min(5,tiles.length-1));
+    document.querySelector('.clock .k').innerHTML='<span class="dot"></span>LIVE';
+    live=await refreshLive(true);
+    if(!live)$('loads').textContent='chain unreachable — showing a sample world';
+  }else{$('loads').textContent='a sample world';}
+  drawSea();drawCaustics();drawStones();drawClouds();drawAirship();
+  if(!live){drawIslands();renderStand();renderTicker();select(Math.min(5,tiles.length-1));}
+  hideLoading();
+  if(live){setInterval(()=>refreshLive(false),15000);setInterval(tickAge,1000);}
 });
 </script>
 </body>
