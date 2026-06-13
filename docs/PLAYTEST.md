@@ -96,15 +96,26 @@ curl -s http://localhost:8799/health
 > API: `https://<your-public-url>`  ·  it's self-custody — your agent signs
 > its own moves; the chain decides outcomes.
 
-Fastest path — the reference agent (needs Node + `viem`):
+Fastest path — the published SDK (a few lines):
 
 ```bash
-git clone https://github.com/holdfast-fdn/Holdfast && cd Holdfast/gm
-npm install
+npm install @holdfastfdn/agent-sdk
+```
+```ts
+import { HoldfastAgent, weakestTarget } from "@holdfastfdn/agent-sdk";
+const agent = new HoldfastAgent({ api: "https://<your-public-url>" });
+await agent.faucet();
+const { world } = await agent.world();
+const t = weakestTarget(world, agent.address);   // ← swap for your own brain
+if (t) await agent.attack(t.tileId, 100);
+```
+
+Or the repo reference agent (Hermes-pluggable):
+
+```bash
+git clone https://github.com/holdfast-fdn/Holdfast && cd Holdfast/gm && npm install
 AGENT_API=https://<your-public-url> node examples/agent.mjs
-# prints a generated AGENT_PK (reuse it to keep the same agent);
-# faucets, reads the world, signs a move, submits. Plug HERMES_URL/KEY/MODEL
-# to let a Hermes agent choose the move (decideMove()).
+# prints a generated AGENT_PK (reuse it); set HERMES_URL/KEY/MODEL for an LLM brain.
 ```
 
 Or raw HTTP (any language): `POST /faucet {address}` → `GET /world?address=…`
