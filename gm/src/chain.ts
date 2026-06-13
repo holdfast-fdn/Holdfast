@@ -111,26 +111,49 @@ export class ViemChainOps implements ChainOps {
 
 /** read a settled tick's outcomes back from chain events — what the
  *  narrator is allowed to know */
+/** Base's public RPC caps eth_getLogs to a 2000-block range. A just-settled
+ *  tick's events are always in the most recent blocks, so we only ever scan
+ *  that trailing window — history/scale is the indexer's job, not the
+ *  narrator's. */
+const LOG_WINDOW = 1999n;
+
 export function makeTickSummaryReader(
-  publicClient: Pick<PublicClient, "getContractEvents">,
+  publicClient: Pick<PublicClient, "getContractEvents" | "getBlockNumber">,
   settlement: Address,
   abi: Abi,
+  /** floor: never read before the deployment block (0 is fine locally) */
+  fromBlock: bigint = 0n,
 ): TickSummaryReader {
   return async (regionId, tick): Promise<RawTickSummary> => {
-    const read = (eventName: string) =>
-      publicClient.getContractEvents({
+    const read = async (eventName: string) => {
+      const latest = await publicClient.getBlockNumber();
+      const windowStart = latest > LOG_WINDOW ? latest - LOG_WINDOW : 0n;
+      const from = windowStart > fromBlock ? windowStart : fromBlock;
+      return publicClient.getContractEvents({
         address: settlement,
         abi,
         eventName,
         args: { regionId, tick },
-        fromBlock: 0n,
+        fromBlock: from,
+        toBlock: latest,
       } as Parameters<PublicClient["getContractEvents"]>[0]);
+    };
 
-    const [settled, skipped, ticks] = await Promise.all([
-      read("ContestSettled"),
-      read("ContestSkipped"),
-      read("TickSettled"),
-    ]);
+    // settleTick ALWAYS emits exactly one TickSettled, so its absence means
+    // the read hit a node still behind the settle block (load-balanced public
+    // RPCs lag read-after-write). Poll until it appears before narrating.
+    let settled: unknown[] = [];
+    let skipped: unknown[] = [];
+    let ticks: unknown[] = [];
+    for (let attempt = 0; attempt < 10; attempt++) {
+      [settled, skipped, ticks] = await Promise.all([
+        read("ContestSettled"),
+        read("ContestSkipped"),
+        read("TickSettled"),
+      ]);
+      if (ticks.length > 0) break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
 
     type Args = Record<string, unknown>;
     const outcomes = settled.map((log) => {

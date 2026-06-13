@@ -35,6 +35,27 @@ ui/holdfast-isles.html?rpc=https%3A%2F%2Fsepolia.base.org&settlement=0x68C2Ef454
 Add `&me=0x...` (gold highlight) and `&names=0xabc:alice,0xdef:bob` for
 the playtest roster.
 
+## End-to-end verified on Base Sepolia — 2026-06-12
+
+Drove a real tick through the actual GM service modules (not bespoke code)
+with `gm/scripts/live-tick.ts`: two custodial players spoke NL → parser →
+intent pool → EIP-712 signatures → `TickScheduler` (Bucket-2 root +
+openTick/fulfillWord/settleTick via `TickDriver`+`ViemChainOps`).
+
+- Settle tx: [`0xad2c…c92dd`](https://sepolia.basescan.org/tx/0xad2c3494287cb833fdc8f648d8194043b46b27db52550b0b49ea344b5c7c92dd)
+- Both attacks lost on honest randomness (alice p=51.7% rolled 93.1%;
+  bob p=49.4% rolled 58.7%). Economy moved exactly as the spec predicts:
+  minted 18 (regen 2×9), burned 220 (both full commits) → supply
+  540 → 838. Re-derived from chain via `gm/scripts/replay-summary.ts`.
+- Companion renders the deployed world live (wilds at garrison 62, real
+  war log) from the public RPC.
+
+RPC lesson baked into the readers: Base's public `eth_getLogs` caps at a
+2000-block range, so the summary reader and the companion war-log read
+only the recent window (history → indexer, Phase 5). Read-after-write lag
+on the load-balanced public RPC is handled by polling for the TickSettled
+event before narrating.
+
 ## Operational checklist (to start the playtest)
 
 1. `enroll([players], 250e18)` as owner once the roster is known.

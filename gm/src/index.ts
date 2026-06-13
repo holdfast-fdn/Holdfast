@@ -78,7 +78,8 @@ async function main(): Promise<void> {
     signer,
     driver: new TickDriver(ops, wordProvider, env("STATE_DIR", "./state")),
     ops,
-    readSummary: makeTickSummaryReader(publicClient, settlement, abi),
+    readSummary: makeTickSummaryReader(
+      publicClient, settlement, abi, BigInt(env("FROM_BLOCK", "0"))),
     narrator: new TemplateNarrator(),
     announce: (text) => transport.send(env("ANNOUNCE_CHAT_ID"), text),
   });

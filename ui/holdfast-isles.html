@@ -191,11 +191,15 @@ async function loadLiveWorld(){
       since:null,
       last:wild?'Held by the wilds':'Read from chain'});
   }
-  // recent war log from ContestSettled events
+  // recent war log from ContestSettled events. Public RPCs (Base) cap
+  // eth_getLogs to a 2000-block window, so scan only the recent tail —
+  // history is the indexer's job, not the companion's.
   let logsOut=[];
   try{
+    const latest=BigInt(await rpcCall('eth_blockNumber',[]));
+    const from=latest>1999n?latest-1999n:0n;
     const logs=await rpcCall('eth_getLogs',[{address:LIVE.settlement,
-      fromBlock:'0x0',toBlock:'latest',
+      fromBlock:'0x'+from.toString(16),toBlock:'0x'+latest.toString(16),
       topics:[TOPIC_CONTEST,'0x'+hex32(LIVE.region)]}]);
     logsOut=logs.slice(-8).reverse().map(l=>{
       const tick=Number(BigInt(l.topics[2]));
