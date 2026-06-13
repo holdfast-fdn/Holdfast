@@ -13,6 +13,7 @@
 
 import type { AgentIntentPool } from "./agentPool.js";
 import { bucket2Root, type Bucket2State } from "./bucket2.js";
+import type { ComputeMeter } from "./computeMeter.js";
 import type { ChainOps, TickDriver, TickRecord } from "./driver.js";
 import type { FactionAgent, FactionMemory, WorldView } from "./faction.js";
 import type { IntentPool } from "./intentPool.js";
@@ -73,6 +74,9 @@ export interface SchedulerDeps {
   narrator: Narrator;
   /** where the war report goes (the game channel) */
   announce: (text: string) => Promise<void>;
+  /** optional GM-compute meter — prices Hermes usage in Flux and guards
+   *  emission≤sink each tick (CLAUDE.md). Absent on the deterministic path. */
+  meter?: ComputeMeter;
   /** optional AI factions that move every tick (the world moves while you
    *  sleep). Needs readWorld + readEscrow to give each agent its view. */
   factions?: FactionSeat[];
@@ -87,6 +91,8 @@ export class TickScheduler {
   async runOnce(): Promise<TickRecord> {
     const d = this.d;
     const tick = (await d.ops.lastSettledTick(d.regionId)) + 1n;
+
+    d.meter?.reset(); // start this tick's GM-compute window
 
     const orders = d.pool.drain();
     const names = new Map<string, string>();
@@ -177,7 +183,33 @@ export class TickScheduler {
 
     const raw = await d.readSummary(d.regionId, tick);
     const summary = this.toSummary(Number(tick), raw, names);
-    await d.announce(await d.narrator.narrate(summary));
+
+    // The tick is SETTLED on-chain. Narration is best-effort prose and is
+    // decoupled from resolution: a slow or failed Hermes (its reliability is
+    // known-flaky) must never reject a settled tick or trigger a re-run. Chain
+    // disposes; only then do we talk, and we talk even if the talking breaks.
+    try {
+      await d.announce(await d.narrator.narrate(summary));
+    } catch (err) {
+      console.error(`narration failed (tick ${tick} already settled):`, err);
+    }
+
+    // Meter GM compute as a Flux sink and guard emission≤sink (CLAUDE.md: do
+    // not let emission exceed sink — slow ponzi). Metering + the guard come
+    // first; realising the sink on-chain (burning it) is the next boundary.
+    if (d.meter) {
+      const compute = d.meter.tickFlux();
+      const sink = summary.burned + compute;
+      console.log(
+        `tick ${tick}: emission ${summary.minted.toFixed(2)} Flux | ` +
+        `sink ${sink.toFixed(2)} (burn ${summary.burned.toFixed(2)} + ` +
+        `compute ${compute.toFixed(2)}, ${d.meter.tickTokensUsed()} tok)`);
+      if (summary.minted > sink) {
+        console.warn(
+          `⚠ emission > sink (${summary.minted.toFixed(2)} > ${sink.toFixed(2)}) ` +
+          `— re-check balance in sim/world_sim.py before scaling`);
+      }
+    }
     return rec;
   }
 

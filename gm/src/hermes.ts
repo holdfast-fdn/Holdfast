@@ -24,6 +24,10 @@ export interface HermesConfig {
   /** retries on a transient failure / empty completion before giving up to
    *  the caller's deterministic fallback (free models can be flaky) */
   maxRetries: number;
+  /** optional sink hook — called with total_tokens of each completion so the
+   *  ComputeMeter can price GM compute in Flux (CLAUDE.md). One chokepoint for
+   *  every Hermes job: parsing, narration, and factions all pass through here. */
+  onUsage?: (tokens: number) => void;
 }
 
 export interface ChatMessage {
@@ -84,9 +88,14 @@ export class HermesClient {
       }
       const data = (await res.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
+        usage?: { total_tokens?: number };
       };
       const text = data.choices?.[0]?.message?.content;
       if (!text) throw new Error("Hermes returned no content");
+      // meter the sink before returning (only on a successful completion)
+      if (this.cfg.onUsage && data.usage?.total_tokens) {
+        this.cfg.onUsage(data.usage.total_tokens);
+      }
       return text;
     } finally {
       clearTimeout(timer);
@@ -121,6 +130,7 @@ export function extractJson(text: string): unknown {
  *  fall back to their deterministic stand-ins). */
 export function hermesFromEnv(
   env: Record<string, string | undefined> = process.env,
+  onUsage?: (tokens: number) => void,
 ): HermesClient | null {
   const baseUrl = env.HERMES_BASE_URL;
   const apiKey = env.HERMES_API_KEY;
@@ -132,5 +142,6 @@ export function hermesFromEnv(
     model,
     timeoutMs: Number(env.HERMES_TIMEOUT_MS ?? "12000"),
     maxRetries: Number(env.HERMES_MAX_RETRIES ?? "2"),
+    onUsage,
   });
 }

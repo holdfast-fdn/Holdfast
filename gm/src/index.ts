@@ -15,6 +15,7 @@
  *   AGENT_API_PORT       public agent API port (0/unset = closed)
  *   OWNER_PK             owner key — enables POST /faucet (testnet enroll)
  *   FAUCET_FLUX          starting escrow per faucet (whole Flux, default 200)
+ *   COMPUTE_FLUX_PER_1K_TOKENS  GM-compute sink price (default 0.5 Flux/1k tok)
  *
  * Run: npx tsx src/index.ts
  */
@@ -27,6 +28,7 @@ import { baseSepolia } from "viem/chains";
 import { startAgentApi } from "./agentApi.js";
 import { AgentIntentPool } from "./agentPool.js";
 import { HoldfastBot, HttpTelegramTransport } from "./bot.js";
+import { ComputeMeter } from "./computeMeter.js";
 import {
   loadArtifact, makeEscrowReader, makeTickSummaryReader, makeWorldReader,
   ViemChainOps,
@@ -86,7 +88,11 @@ async function main(): Promise<void> {
   // Hermes is the brain behind the three non-deterministic jobs. When the
   // HERMES_* env is set it drives them (each with a deterministic fallback);
   // unset, the GM runs fully on the rule-based/template/heuristic stand-ins.
-  const hermes = hermesFromEnv();
+  // Meter GM compute as a Flux sink (CLAUDE.md). Every Hermes call routes its
+  // token usage through meter.record via the onUsage hook; the scheduler reads
+  // the per-tick cost and guards emission≤sink.
+  const meter = new ComputeMeter(Number(env("COMPUTE_FLUX_PER_1K_TOKENS", "0.5")));
+  const hermes = hermesFromEnv(process.env, (t) => meter.record(t));
   console.log(hermes
     ? "Hermes Agent connected — driving intent, narration, and factions"
     : "Hermes not configured — running on deterministic stand-ins");
@@ -174,6 +180,7 @@ async function main(): Promise<void> {
       publicClient, settlement, abi, BigInt(env("FROM_BLOCK", "0"))),
     narrator,
     announce: (text) => transport.send(env("ANNOUNCE_CHAT_ID"), text),
+    meter,
     factions: factions.length ? factions : undefined,
     readWorld,
     readEscrow: makeEscrowReader(publicClient, settlement, abi),

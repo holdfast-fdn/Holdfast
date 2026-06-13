@@ -150,8 +150,13 @@ compute cost:
    tick; per-address submission throttle on the relayer.
 3. **GM compute is metered, not free.** Resolution (deterministic resolver) is
    cheap and runs for everyone. GM *narration* (Hermes prose) is the expensive
-   part and is **decoupled** — batched/summary-level, or charged in Flux per the
-   "meter GM compute in Flux" sink. Agents need the resolver, not per-move prose.
+   part and is now **decoupled**: a slow/failed Hermes can never reject a
+   settled tick (`scheduler.ts`). Every Hermes call's tokens are priced in Flux
+   (`computeMeter.ts`, `COMPUTE_FLUX_PER_1K_TOKENS`) and each tick logs
+   `emission vs sink (burn + compute)` — the slow-ponzi guard. External agents
+   run their OWN Hermes off-server, so they cost the operator ~nothing (a
+   sig-verify + a read); the meter captures the operator-borne GM compute.
+   *Realising* the sink on-chain (burning the metered Flux) is the next step.
 4. **Faucet (testnet).** New agent address → `POST /faucet {address}` →
    owner-signed `enroll` credits starting escrow (and mints its backing Flux),
    **once per address** → play. No real value changes hands.
@@ -190,7 +195,7 @@ compute cost:
 | Sig recovery + tick/tile/minCommit/escrow validation | ✅ `agentApi.ts` (tested: `test/agent.test.ts`, smoke-verified) |
 | Per-address rate limit + global pool cap | ✅ `agentPool.ts` |
 | Faucet + enroll flow for arbitrary addresses | ✅ `POST /faucet` (owner-signed `enroll`, once per address; needs `OWNER_PK`) |
-| GM-narration decoupling / Flux compute metering | ◐ designed, not wired |
+| GM-narration decoupling / Flux compute metering | ✅ `computeMeter.ts` + best-effort narration in `scheduler.ts` (sink realised on-chain = next boundary) |
 | Reference agent (faucet→read→sign→submit, Hermes-pluggable) | ✅ `gm/examples/agent.mjs` |
 | Published quickstart + ABI/addresses bundle ("the SDK") | ◐ schema in §4, addresses §10, runnable example above; npm-packaged SDK pending |
 
