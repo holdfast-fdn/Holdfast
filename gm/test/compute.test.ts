@@ -10,7 +10,8 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ComputeMeter } from "../src/computeMeter.js";
+import { ComputeMeter, type ComputeSink } from "../src/computeMeter.js";
+import { makeComputeSink } from "../src/chain.js";
 import { TickDriver, type ChainOps } from "../src/driver.js";
 import { IntentPool } from "../src/intentPool.js";
 import type { Narrator } from "../src/narrator.js";
@@ -55,7 +56,7 @@ const SUMMARY: RawTickSummary = {
   outcomes: [], minted: 26n * WAD, burned: 40n * WAD, skipped: [],
 };
 
-function makeScheduler(narrator: Narrator, meter?: ComputeMeter) {
+function makeScheduler(narrator: Narrator, meter?: ComputeMeter, sink?: ComputeSink) {
   const dir = mkdtempSync(join(tmpdir(), "holdfast-compute-"));
   const ops = new MockOps();
   return new TickScheduler({
@@ -70,7 +71,13 @@ function makeScheduler(narrator: Narrator, meter?: ComputeMeter) {
     narrator,
     announce: async () => {},
     meter,
+    sink,
   });
+}
+
+/** a narrator that also "spends" tokens, simulating a Hermes call mid-tick */
+function spendingNarrator(meter: ComputeMeter, tokens: number): Narrator {
+  return { narrate() { meter.record(tokens); return "prose"; } };
 }
 
 describe("narration is decoupled from resolution", () => {
@@ -89,5 +96,74 @@ describe("narration is decoupled from resolution", () => {
     const ok: Narrator = { narrate: () => "quiet" };
     await makeScheduler(ok, meter).runOnce();
     expect(meter.tickTokensUsed()).toBe(0); // runOnce reset it at the start
+  });
+});
+
+describe("compute sink realised on-chain", () => {
+  const WAD = 10n ** 18n;
+
+  it("burns the metered Flux after settlement", async () => {
+    const meter = new ComputeMeter(0.5);            // 0.5 Flux / 1k tokens
+    const burns: bigint[] = [];
+    const sink: ComputeSink = {
+      totalBurned: () => 0n,
+      async burn(wad) { burns.push(wad); return { hash: "0xburn", burned: wad }; },
+    };
+    // 2000 tokens spent mid-tick -> 1.0 Flux compute -> burn 1e18
+    await makeScheduler(spendingNarrator(meter, 2000), meter, sink).runOnce();
+    expect(burns).toHaveLength(1);
+    expect(burns[0]).toBe(1n * WAD);
+  });
+
+  it("a failing burn never rejects a settled tick (best-effort)", async () => {
+    const meter = new ComputeMeter(0.5);
+    const sink: ComputeSink = {
+      totalBurned: () => 0n,
+      async burn() { throw new Error("rpc down"); },
+    };
+    const rec = await makeScheduler(spendingNarrator(meter, 1000), meter, sink).runOnce();
+    expect(rec.phase).toBe("settled");
+  });
+
+  it("does not call the sink when no compute was spent", async () => {
+    const meter = new ComputeMeter(0.5);
+    let called = false;
+    const sink: ComputeSink = {
+      totalBurned: () => 0n,
+      async burn() { called = true; return null; },
+    };
+    await makeScheduler({ narrate: () => "quiet" }, meter, sink).runOnce();
+    expect(called).toBe(false);
+  });
+});
+
+describe("makeComputeSink", () => {
+  const WAD = 10n ** 18n;
+  function fakeChain(balance: bigint) {
+    return {
+      readContract: async () => balance,
+      waitForTransactionReceipt: async () => ({ status: "success" }),
+    } as never;
+  }
+  const treasury = {
+    account: { address: "0x00000000000000000000000000000000000beef0" },
+    chain: {}, writeContract: async () => "0xburn",
+  } as never;
+
+  it("caps the burn at the treasury balance", async () => {
+    const sink = makeComputeSink(fakeChain(3n * WAD), treasury, "0xflux" as Address, [] as never);
+    const r = await sink.burn(10n * WAD);
+    expect(r?.burned).toBe(3n * WAD); // capped
+    expect(sink.totalBurned()).toBe(3n * WAD);
+  });
+
+  it("returns null on an empty treasury (sink owed, unrealised)", async () => {
+    const sink = makeComputeSink(fakeChain(0n), treasury, "0xflux" as Address, [] as never);
+    expect(await sink.burn(5n * WAD)).toBeNull();
+  });
+
+  it("ignores a non-positive amount", async () => {
+    const sink = makeComputeSink(fakeChain(99n * WAD), treasury, "0xflux" as Address, [] as never);
+    expect(await sink.burn(0n)).toBeNull();
   });
 });

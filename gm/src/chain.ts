@@ -13,6 +13,7 @@ import type {
   Chain,
   Transport,
 } from "viem";
+import type { ComputeSink } from "./computeMeter.js";
 import type { ChainOps } from "./driver.js";
 import type { WorldView } from "./faction.js";
 import type { RawTickSummary, TickSummaryReader } from "./scheduler.js";
@@ -111,6 +112,42 @@ export class ViemChainOps implements ChainOps {
 }
 
 const WAD_F = 1e18;
+
+/**
+ * On-chain compute sink: burn metered Flux from an operator treasury wallet
+ * (FluxToken.burn destroys the caller's own balance). Best-effort — caps the
+ * burn at the treasury's balance and never throws into a settled tick. Fund
+ * the treasury on testnet via owner `enroll([treasury], n)` then treasury
+ * `withdraw(n)` (escrow -> wallet balance), so it has Flux to burn.
+ */
+export function makeComputeSink(
+  publicClient: Pick<PublicClient, "readContract" | "waitForTransactionReceipt">,
+  treasury: WalletClient<Transport, Chain, Account>,
+  flux: Address,
+  fluxAbi: Abi,
+): ComputeSink {
+  let burnedTotal = 0n;
+  return {
+    totalBurned: () => burnedTotal,
+    async burn(amountWad) {
+      if (amountWad <= 0n) return null;
+      const balance = (await publicClient.readContract({
+        address: flux, abi: fluxAbi, functionName: "balanceOf",
+        args: [treasury.account.address],
+      })) as bigint;
+      const amount = amountWad < balance ? amountWad : balance;
+      if (amount <= 0n) return null; // empty treasury — sink owed, unrealised
+      const hash = await treasury.writeContract({
+        address: flux, abi: fluxAbi, functionName: "burn", args: [amount],
+        chain: treasury.chain, account: treasury.account,
+      });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") throw new Error(`burn reverted (${hash})`);
+      burnedTotal += amount;
+      return { hash, burned: amount };
+    },
+  };
+}
 
 /** Build the WorldView a faction agent reasons over — all tiles + the
  *  resolver params, read straight from the settlement contract. */

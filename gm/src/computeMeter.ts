@@ -12,9 +12,25 @@
  * intent (a sig-verify + a read). This meter therefore captures exactly the
  * compute the operator pays for, which is what the sink must cover.
  *
- * This is metering + the balance guard. Realising the sink on-chain (burning
- * the metered Flux, or charging it) is the next boundary, not this file.
+ * This is metering + the balance guard. Realising the sink on-chain (actually
+ * burning the metered Flux) is a ComputeSink — see makeComputeSink in chain.ts.
  */
+
+/**
+ * On-chain realisation of the compute sink: burn the metered Flux so supply
+ * genuinely drops (an auditable Burn event), making "emission≤sink" real and
+ * not just logged. Best-effort by contract — it runs AFTER settlement and must
+ * never reject a settled tick. Testnet funding model: an operator treasury
+ * wallet holds Flux and burns from it (chosen 2026-06-13). Where that Flux
+ * comes from economically (a protocol skim) is a later, contract-level concern.
+ */
+export interface ComputeSink {
+  /** burn up to `amountWad` Flux from the treasury. Returns the realised burn
+   *  (and tx hash), or null if nothing could be burned (e.g. empty treasury). */
+  burn(amountWad: bigint): Promise<{ hash: string; burned: bigint } | null>;
+  /** lifetime Flux actually burned for compute (WAD) */
+  totalBurned(): bigint;
+}
 
 export class ComputeMeter {
   private tickTokens = 0;

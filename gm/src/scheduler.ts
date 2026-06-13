@@ -13,7 +13,7 @@
 
 import type { AgentIntentPool } from "./agentPool.js";
 import { bucket2Root, type Bucket2State } from "./bucket2.js";
-import type { ComputeMeter } from "./computeMeter.js";
+import type { ComputeMeter, ComputeSink } from "./computeMeter.js";
 import type { ChainOps, TickDriver, TickRecord } from "./driver.js";
 import type { FactionAgent, FactionMemory, WorldView } from "./faction.js";
 import type { IntentPool } from "./intentPool.js";
@@ -77,6 +77,9 @@ export interface SchedulerDeps {
   /** optional GM-compute meter — prices Hermes usage in Flux and guards
    *  emission≤sink each tick (CLAUDE.md). Absent on the deterministic path. */
   meter?: ComputeMeter;
+  /** optional on-chain sink — burns the metered compute Flux from the operator
+   *  treasury so supply actually drops. Best-effort, after settlement. */
+  sink?: ComputeSink;
   /** optional AI factions that move every tick (the world moves while you
    *  sleep). Needs readWorld + readEscrow to give each agent its view. */
   factions?: FactionSeat[];
@@ -208,6 +211,26 @@ export class TickScheduler {
         console.warn(
           `⚠ emission > sink (${summary.minted.toFixed(2)} > ${sink.toFixed(2)}) ` +
           `— re-check balance in sim/world_sim.py before scaling`);
+      }
+
+      // Realise the sink on-chain: burn the metered Flux from the treasury so
+      // supply genuinely drops. Best-effort — the tick is already settled, so
+      // a failed/underfunded burn is logged, never fatal. The sink is "owed"
+      // until realised; an empty treasury leaves it visibly unrealised.
+      if (d.sink && compute > 0) {
+        const wad = BigInt(Math.round(compute * 1e6)) * 10n ** 12n;
+        try {
+          const r = await d.sink.burn(wad);
+          if (r) {
+            console.log(`  sink realised: burned ${(Number(r.burned) / 1e18).toFixed(2)} ` +
+              `Flux for compute (tx ${r.hash})`);
+          } else {
+            console.warn(`  ⚠ compute sink ${compute.toFixed(2)} Flux UNREALISED ` +
+              `(treasury empty — fund it to burn)`);
+          }
+        } catch (err) {
+          console.error(`compute-sink burn failed (tick ${tick} already settled):`, err);
+        }
       }
     }
     return rec;

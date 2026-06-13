@@ -16,6 +16,8 @@
  *   OWNER_PK             owner key — enables POST /faucet (testnet enroll)
  *   FAUCET_FLUX          starting escrow per faucet (whole Flux, default 200)
  *   COMPUTE_FLUX_PER_1K_TOKENS  GM-compute sink price (default 0.5 Flux/1k tok)
+ *   TREASURY_PK          treasury key — burns metered compute Flux on-chain
+ *   FLUX_ADDRESS         deployed FluxToken (required if TREASURY_PK is set)
  *
  * Run: npx tsx src/index.ts
  */
@@ -30,8 +32,8 @@ import { AgentIntentPool } from "./agentPool.js";
 import { HoldfastBot, HttpTelegramTransport } from "./bot.js";
 import { ComputeMeter } from "./computeMeter.js";
 import {
-  loadArtifact, makeEscrowReader, makeTickSummaryReader, makeWorldReader,
-  ViemChainOps,
+  loadArtifact, makeComputeSink, makeEscrowReader, makeTickSummaryReader,
+  makeWorldReader, ViemChainOps,
 } from "./chain.js";
 import { TickDriver } from "./driver.js";
 import {
@@ -93,6 +95,22 @@ async function main(): Promise<void> {
   // the per-tick cost and guards emission≤sink.
   const meter = new ComputeMeter(Number(env("COMPUTE_FLUX_PER_1K_TOKENS", "0.5")));
   const hermes = hermesFromEnv(process.env, (t) => meter.record(t));
+
+  // Realise the sink on-chain: with TREASURY_PK + FLUX_ADDRESS set, each tick
+  // burns the metered compute Flux from the treasury wallet (FluxToken.burn).
+  // Unset -> the meter still logs the owed sink, but nothing is burned.
+  const treasuryPk = process.env.TREASURY_PK;
+  const sink = treasuryPk
+    ? makeComputeSink(
+        publicClient,
+        wallet(treasuryPk),
+        env("FLUX_ADDRESS") as Address,
+        loadArtifact("FluxToken").abi,
+      )
+    : undefined;
+  console.log(sink
+    ? "compute sink ON — burning metered Flux from the treasury each tick"
+    : "compute sink off — GM compute metered + logged, not burned");
   console.log(hermes
     ? "Hermes Agent connected — driving intent, narration, and factions"
     : "Hermes not configured — running on deterministic stand-ins");
@@ -181,6 +199,7 @@ async function main(): Promise<void> {
     narrator,
     announce: (text) => transport.send(env("ANNOUNCE_CHAT_ID"), text),
     meter,
+    sink,
     factions: factions.length ? factions : undefined,
     readWorld,
     readEscrow: makeEscrowReader(publicClient, settlement, abi),
