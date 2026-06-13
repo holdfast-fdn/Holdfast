@@ -39,14 +39,17 @@
   .bi3{bottom:8%;left:4%;width:13vw;min-width:120px;opacity:.28;animation-duration:8.4s;animation-delay:-1.5s;filter:brightness(.48) blur(1.1px)}
   @media(max-width:880px){.bgisle{opacity:.22!important}.bi3{display:none}}
 
-  nav{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:16px 28px}
+  /* ---- top nav (shared with index) ---- */
+  nav{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;backdrop-filter:blur(8px);background:linear-gradient(180deg,rgba(11,14,21,.7),transparent)}
   nav .brand{display:flex;align-items:center;gap:11px}
-  nav .brand img{width:32px;height:32px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
-  nav .brand .nm{font-family:var(--display);font-weight:900;letter-spacing:3px;font-size:15px}
-  nav .back{font-size:12.5px;color:var(--steel);letter-spacing:1px}
-  nav .back:hover{color:var(--marble)}
+  nav .brand img{width:34px;height:34px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
+  nav .brand .nm{font-family:var(--display);font-weight:900;letter-spacing:3px;font-size:16px}
+  nav .links{display:flex;gap:26px;font-size:13px;color:var(--steel);font-weight:500}
+  nav .links a:hover{color:var(--marble)}
+  @media(max-width:680px){nav .links{display:none}}
 
-  .head{position:relative;z-index:1;text-align:center;padding:48px 24px 14px}
+  .head{position:relative;z-index:1;text-align:center;padding:96px 24px 14px}
   .eyebrow{color:var(--signal);font-size:11px;letter-spacing:5px;font-weight:600;text-transform:uppercase}
   .head h1{font-family:'Cinzel Decorative',var(--display);font-weight:900;font-size:clamp(27px,5.4vw,50px);letter-spacing:1.5px;margin:10px 0 10px;
     background:linear-gradient(180deg,#FFF2C4 0%,#FBD774 28%,#EBB049 56%,#C7891F 84%,#9A6717 100%);
@@ -86,9 +89,10 @@
   .enter.go{background:linear-gradient(180deg,#E5B658,#C9941F);color:#11161F}
   .enter.go:hover{filter:brightness(1.07)}
   .enter.dim{background:rgba(255,255,255,.04);color:var(--steel);box-shadow:inset 0 0 0 1px var(--line);cursor:default}
-  footer{position:relative;z-index:1;border-top:1px solid var(--line);padding:30px;text-align:center;color:var(--steel);font-size:12px}
+  footer{position:relative;z-index:1;border-top:1px solid var(--line);padding:40px 28px;text-align:center;color:var(--steel);font-size:12.5px}
   footer .base{color:var(--signal)}
-  footer .social{margin-top:12px;display:flex;gap:20px;justify-content:center;font-size:13px;font-weight:600}
+  footer a{color:var(--steel)}footer a:hover{color:var(--marble)}
+  footer .social{margin-top:13px;display:flex;gap:20px;justify-content:center;font-size:13.5px;font-weight:600}
   footer .social a{display:inline-flex;align-items:center;gap:6px;color:var(--steel);transition:color .15s}
   footer .social a:hover{color:var(--gold)}
 </style>
@@ -107,10 +111,16 @@
 </div>
 
 <nav>
-  <a class="brand" href="index.html"><img src="../brand/holdfast-logo.png" alt=""/><span class="nm">HOLDFAST</span></a>
-  <div style="display:flex;align-items:center;gap:22px">
-    <a class="back" href="https://x.com/holdfast_fdn" target="_blank" rel="noopener">𝕏</a>
-    <a class="back" href="index.html">← Home</a>
+  <a class="brand" href="index.html">
+    <img src="../brand/holdfast-logo.png" alt="Holdfast"/>
+    <span class="nm">HOLDFAST</span>
+  </a>
+  <div class="links">
+    <a href="index.html#world">The World</a>
+    <a href="index.html#play">How to Play</a>
+    <a href="world.html">Map</a>
+    <a href="https://github.com/holdfast-fdn/Holdfast" target="_blank">GitHub</a>
+    <a href="https://x.com/holdfast_fdn" target="_blank" rel="noopener">𝕏</a>
   </div>
 </nav>
 
@@ -123,7 +133,7 @@
 <div class="regions" id="regions"></div>
 
 <footer>
-  <div>HOLDFAST · built on <span class="base">Base</span> ⚓ · one continent is live; more are charted</div>
+  <div>HOLDFAST · The Sundered Isles · built on <span class="base">Base</span> ⚓</div>
   <div class="social">
     <a href="https://x.com/holdfast_fdn" target="_blank" rel="noopener">𝕏 holdfast_fdn</a>
     <a href="https://t.me/holdfast_gmbot" target="_blank" rel="noopener">✈ @holdfast_gmbot</a>
