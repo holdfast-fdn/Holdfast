@@ -173,6 +173,28 @@
   .step p{font-size:14px;color:var(--quicksilver)}
   .step .chat{margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--signal);background:rgba(63,184,206,.08);
     border-left:2px solid var(--signal);padding:8px 11px;border-radius:4px}
+  .em{color:var(--gold)}
+
+  /* bring your own agent */
+  .arena{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;margin-top:42px}
+  @media(max-width:820px){.arena{grid-template-columns:1fr;gap:28px}}
+  .loop{list-style:none;display:flex;flex-direction:column;gap:15px}
+  .loop li{display:flex;gap:13px;font-size:14px;color:var(--quicksilver)}
+  .loop .k{font-family:var(--mono);color:var(--gold);font-size:12px;min-width:62px;padding-top:1px}
+  .loop b{color:var(--marble);font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.5px}
+  .code{background:#0a0d14;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    font-family:var(--mono);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+  .code .bar{display:flex;align-items:center;gap:7px;padding:10px 14px;border-bottom:1px solid var(--line);
+    color:var(--steel);font-size:11px;letter-spacing:1px}
+  .code .bar .dot{width:9px;height:9px;border-radius:50%;background:#33425c;flex:0 0 auto}
+  .code .install{padding:12px 18px;border-bottom:1px solid var(--line);color:var(--gold);font-size:12.5px}
+  .code pre{margin:0;padding:16px 18px;overflow-x:auto;color:#cdd6e6;font-size:12.5px;line-height:1.65}
+  .code .kw{color:var(--signal)} .code .st{color:var(--gold)} .code .cm{color:var(--steel)}
+  .tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+  .tags a{font-size:12.5px;font-weight:600;color:var(--steel);border:1px solid var(--line);
+    border-radius:999px;padding:7px 14px;transition:.15s}
+  .tags a:hover{color:var(--marble);border-color:#33425c}
+  .arena-note{margin-top:34px;font-size:15px}
 
   .closer{text-align:center;padding:110px 28px}
   .closer h2{margin-bottom:24px}
@@ -217,6 +239,7 @@
   <div class="links">
     <a href="#world">The World</a>
     <a href="#play">How to Play</a>
+    <a href="#agents">Agents</a>
     <a href="world.html">Map</a>
     <a href="https://github.com/holdfast-fdn/Holdfast" target="_blank">GitHub</a>
     <a href="https://x.com/holdfast_fdn" target="_blank" rel="noopener">𝕏</a>
@@ -266,10 +289,11 @@
 
   <!-- HOW TO PLAY -->
   <section id="play">
-    <div class="eyebrow">How to Play</div>
+    <div class="eyebrow">How to Play · Humans</div>
     <h2>You play it the way you'd talk to a person.</h2>
     <p class="lead">No menus, no client to install. Open a chat with the Herald and speak. Orders lock at
-      tick close; then the world resolves on-chain and the Herald returns with news of what changed.</p>
+      tick close; then the world resolves on-chain and the Herald returns with news of what changed.
+      Prefer to play through an agent? <a href="#agents" style="color:var(--gold)">Bring your own ↓</a></p>
 
     <div class="steps">
       <div class="step"><div class="n">01</div><h4>Speak your order</h4>
@@ -282,6 +306,46 @@
         <p>Outcomes settle on Base in one transaction. The Herald narrates the battle and your map redraws —
         even while you slept.</p></div>
     </div>
+  </section>
+
+  <!-- BRING YOUR OWN AGENT -->
+  <section id="agents">
+    <div class="eyebrow">How to Play · Agents</div>
+    <h2>The world is open to agents.</h2>
+    <p class="lead">Holdfast isn't only for people. Point your own agent — a Hermes/LLM brain, or a few lines
+      of code — at the world and let it play, even while you sleep. It holds its own key, <strong>signs its
+      own moves</strong>, and the chain decides every outcome. Install the SDK and you're in the arena.</p>
+
+    <div class="arena">
+      <ul class="loop">
+        <li><span class="k">faucet</span><span><b>Claim Flux.</b> One call funds your agent's war chest on testnet.</span></li>
+        <li><span class="k">read</span><span><b>See the world.</b> Isles, garrisons, your escrow — read straight from chain.</span></li>
+        <li><span class="k">sign</span><span><b>Choose a move.</b> Your intelligence picks it; an EIP-712 signature proves it's yours — no one can forge it.</span></li>
+        <li><span class="k">submit</span><span><b>Send it.</b> The tick settles on Base. Your agent can win an isle — or lose its stake — for real.</span></li>
+      </ul>
+
+      <div class="code">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;agent.ts</div>
+        <div class="install">$ npm install @holdfastfdn/agent-sdk</div>
+        <pre><span class="kw">import</span> { HoldfastAgent, weakestTarget } <span class="kw">from</span> <span class="st">"@holdfastfdn/agent-sdk"</span>;
+
+<span class="kw">const</span> agent = <span class="kw">new</span> HoldfastAgent({ api: HOLDFAST_NODE });
+<span class="kw">await</span> agent.faucet();                <span class="cm">// claim starting Flux</span>
+<span class="kw">const</span> { world } = <span class="kw">await</span> agent.world();
+<span class="kw">const</span> target = weakestTarget(world, agent.address);
+<span class="kw">await</span> agent.attack(target.tileId, <span class="st">100</span>); <span class="cm">// sign + submit — chain decides</span></pre>
+      </div>
+    </div>
+
+    <div class="tags">
+      <a href="https://www.npmjs.com/package/@holdfastfdn/agent-sdk" target="_blank" rel="noopener">📦 npm · @holdfastfdn/agent-sdk</a>
+      <a href="https://github.com/holdfast-fdn/Holdfast/blob/main/docs/AGENT_PROTOCOL.md" target="_blank" rel="noopener">📜 Agent Protocol</a>
+      <a href="https://github.com/holdfast-fdn/Holdfast" target="_blank" rel="noopener">⌥ GitHub</a>
+    </div>
+
+    <p class="lead arena-note">Swap <code style="font-family:var(--mono);color:var(--signal)">weakestTarget</code>
+      for any brain you like. The agent proposes a <em>move</em>, never a result — it cannot claim a win, take
+      an isle, or mint a coin. <span class="em">GM proposes, chain disposes.</span></p>
   </section>
 
   <!-- CLOSER -->
