@@ -39,6 +39,16 @@
   .rc3{top:56%;width:27vw;min-width:240px;opacity:.42;animation-duration:104s;animation-delay:-34s}
   .rc4{top:72%;width:35vw;min-width:300px;opacity:.3;animation-duration:150s;animation-delay:-96s}
   .rc5{top:3%;width:22vw;min-width:200px;opacity:.26;animation-duration:170s;animation-delay:-130s}
+  /* floating isles drifting in the night world — background depth */
+  .bgisles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .bgisle{position:absolute;animation:bob ease-in-out infinite;
+    filter:brightness(.66) saturate(.92) drop-shadow(0 22px 30px rgba(0,8,20,.55))}
+  .bi1{bottom:-3%;left:-4%;width:27vw;min-width:230px;opacity:.6;animation-duration:7.5s}
+  .bi2{bottom:3%;right:-5%;width:25vw;min-width:210px;opacity:.5;animation-duration:9s;animation-delay:-2s;
+    filter:brightness(.6) blur(.5px) drop-shadow(0 18px 26px rgba(0,8,20,.5))}
+  .bi3{top:57%;left:7%;width:13vw;min-width:120px;opacity:.34;animation-duration:8s;animation-delay:-4s;filter:brightness(.5) blur(1.1px)}
+  .bi4{top:29%;right:5%;width:12vw;min-width:110px;opacity:.3;animation-duration:8.6s;animation-delay:-1s;filter:brightness(.46) blur(1.4px)}
+  @media(max-width:760px){.bi3,.bi4{display:none}.bi1,.bi2{opacity:.36}}
   .stars{position:absolute;inset:0;opacity:.5;
     background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.5),transparent),
       radial-gradient(1px 1px at 70% 20%,rgba(255,255,255,.4),transparent),
@@ -53,7 +63,7 @@
   nav{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
     padding:16px 28px;backdrop-filter:blur(8px);background:linear-gradient(180deg,rgba(11,14,21,.7),transparent)}
   nav .brand{display:flex;align-items:center;gap:11px}
-  nav .brand img{width:34px;height:34px;image-rendering:pixelated}
+  nav .brand img{width:34px;height:34px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
   nav .brand .nm{font-family:var(--display);font-weight:900;letter-spacing:3px;font-size:16px}
   nav .links{display:flex;gap:26px;font-size:13px;color:var(--steel);font-weight:500}
   nav .links a:hover{color:var(--marble)}
@@ -61,11 +71,13 @@
 
   /* ---- hero ---- */
   .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;position:relative}
-  .logo-wrap{position:relative;width:min(340px,72vw);margin-bottom:6px}
-  .logo-wrap::before{content:"";position:absolute;inset:-12% -8%;border-radius:50%;
-    background:radial-gradient(circle,rgba(217,168,69,.16) 0%,transparent 62%);filter:blur(14px);z-index:-1}
-  .logo-wrap img{width:100%;display:block;image-rendering:pixelated;
-    filter:drop-shadow(0 14px 40px rgba(0,0,0,.55))}
+  .logo-wrap{position:relative;width:min(300px,66vw);margin-bottom:2px}
+  /* soft pool of light grounds the emblem so it reads as part of the scene */
+  .logo-wrap::before{content:"";position:absolute;inset:-28% -22%;border-radius:50%;z-index:-1;
+    background:radial-gradient(closest-side, rgba(217,168,69,.22) 0%, rgba(63,184,206,.10) 42%, transparent 72%);
+    filter:blur(22px)}
+  .logo-wrap img{width:100%;display:block;
+    filter:drop-shadow(0 18px 36px rgba(0,8,20,.6)) drop-shadow(0 0 1px rgba(11,14,21,.9))}
   .logo-wrap .float{animation:bob 6s ease-in-out infinite}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
   h1.word{font-family:var(--display);font-weight:900;font-size:clamp(40px,9vw,84px);letter-spacing:clamp(6px,2vw,16px);
@@ -135,6 +147,12 @@
   <img class="rcloud rc3" src="assets/cloud-1.png" alt="" onerror="this.remove()"/>
   <img class="rcloud rc4" src="assets/cloud-4.png" alt="" onerror="this.remove()"/>
   <img class="rcloud rc5" src="assets/cloud-2.png" alt="" onerror="this.remove()"/>
+</div>
+<div class="bgisles">
+  <img class="bgisle bi1" src="assets/isl-2.png" alt="" onerror="this.remove()"/>
+  <img class="bgisle bi2" src="assets/r1/isl-4.png" alt="" onerror="this.remove()"/>
+  <img class="bgisle bi3" src="assets/r2/isl-3.png" alt="" onerror="this.remove()"/>
+  <img class="bgisle bi4" src="assets/isl-7.png" alt="" onerror="this.remove()"/>
 </div>
 
 <nav>
