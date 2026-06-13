@@ -17,6 +17,7 @@
  */
 
 import { randomBytes } from "node:crypto";
+import { existsSync, rmSync } from "node:fs";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
@@ -103,6 +104,29 @@ async function main(): Promise<void> {
         console.error("tick failed (will resume next fire):", err);
       });
     }, clamped);
+  }
+
+  // Manual tick trigger: when TICK_TRIGGER_FILE appears, drain the bot's
+  // OWN in-memory pool and settle one tick, then remove the file. Lets the
+  // operator fire a tick from outside the process (e.g. `touch <file>`)
+  // without an admin command or a network endpoint — the order flows from
+  // the live bot, not a side script. A run in progress blocks re-entry.
+  const triggerFile = env("TICK_TRIGGER_FILE", "");
+  if (triggerFile) {
+    let running = false;
+    setInterval(async () => {
+      if (running || !existsSync(triggerFile)) return;
+      running = true;
+      try {
+        rmSync(triggerFile, { force: true });
+        console.log("manual tick triggered");
+        await scheduler.runOnce();
+      } catch (err) {
+        console.error("manual tick failed:", err);
+      } finally {
+        running = false;
+      }
+    }, 4000);
   }
 
   process.on("SIGINT", () => {
