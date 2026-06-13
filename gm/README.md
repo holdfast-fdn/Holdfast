@@ -60,7 +60,7 @@ HERMES_TIMEOUT_MS=12000
 
 # --- AI factions (the world moves while you sleep)
 #   key:Display Name:archetype  (archetype = raider|turtle|opportunist|balancer)
-FACTIONS=ashen:Ashen Horde:raider,iron:Iron Pact:turtle
+FACTIONS="ashen:Ashen Horde:raider,iron:Iron Pact:turtle"
 ```
 
 ```bash
