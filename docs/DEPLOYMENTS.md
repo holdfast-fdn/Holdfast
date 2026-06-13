@@ -108,6 +108,21 @@ larger token budget and a client retry. Add credits at
 portal.nousresearch.com and set `HERMES_MODEL=~anthropic/claude-opus-latest`
 for a faster, sharper brain; no code change.
 
+## Human vs. AI in one tick — 2026-06-13 (the whole vision, settled)
+
+The complete loop, both players real on chain, decided by honest VRF in a
+single tick 6:
+
+- A human attacked the Ashen Horde's isle 1 (30.3% chance) and **won the
+  upset** (rolled 25.7%) — took the tile from the AI faction.
+- In the same tick, the Hermes-driven Ashen Horde attacked wild isle 2
+  (43.1%) and took it.
+
+Neither could cheat (signed intents, commit-then-randomness); either could
+lose. The Herald narrated both. A human and an LLM faction competing as
+economic equals on a public blockchain, the human winning — this is the
+unfilled intersection the project set out to build.
+
 ## Operational checklist (to start the playtest)
 
 1. `enroll([players], 250e18)` as owner once the roster is known.
