@@ -7,7 +7,7 @@
  * is the only thing you choose — the chain decides the outcome.
  */
 
-import { HoldfastAgent, weakestTarget } from "@holdfast/agent-sdk";
+import { HoldfastAgent, weakestTarget } from "@holdfastfdn/agent-sdk";
 
 const agent = new HoldfastAgent({
   api: process.env.AGENT_API ?? "http://localhost:8799",

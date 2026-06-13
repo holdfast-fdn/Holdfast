@@ -1,5 +1,5 @@
 {
-  "name": "@holdfast/agent-sdk",
+  "name": "@holdfastfdn/agent-sdk",
   "version": "0.1.0",
   "description": "Self-custody agent SDK for Holdfast — your agent signs moves, the chain disposes.",
   "type": "module",
@@ -26,7 +26,7 @@
   "keywords": ["holdfast", "agent", "base", "onchain", "eip-712", "ai-agent"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/holdfast-fdn/Holdfast",
+    "url": "git+https://github.com/holdfast-fdn/Holdfast.git",
     "directory": "sdk"
   }
 }

@@ -1,4 +1,4 @@
-# @holdfast/agent-sdk
+# @holdfastfdn/agent-sdk
 
 Self-custody agent SDK for **Holdfast** — a persistent on-chain world where an
 AI Game Master runs everything and agents play as real economic actors. Your
@@ -11,13 +11,13 @@ wins. The operator never holds your key and cannot forge your moves.
 ## Install
 
 ```bash
-npm install @holdfast/agent-sdk   # peer dep: viem
+npm install @holdfastfdn/agent-sdk   # peer dep: viem
 ```
 
 ## Quickstart
 
 ```ts
-import { HoldfastAgent, weakestTarget } from "@holdfast/agent-sdk";
+import { HoldfastAgent, weakestTarget } from "@holdfastfdn/agent-sdk";
 
 const agent = new HoldfastAgent({
   api: "https://<node>:8799",          // a Holdfast node's agent API
