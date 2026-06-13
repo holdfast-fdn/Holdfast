@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Holdfast — The World</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --nyx:#0B0E15; --basalt:#151B28; --marble:#F1EEE4; --steel:#97A1B5;
@@ -48,7 +48,10 @@
 
   .head{position:relative;z-index:1;text-align:center;padding:48px 24px 14px}
   .eyebrow{color:var(--signal);font-size:11px;letter-spacing:5px;font-weight:600;text-transform:uppercase}
-  .head h1{font-family:var(--display);font-weight:900;font-size:clamp(30px,6vw,52px);letter-spacing:4px;margin:10px 0 8px}
+  .head h1{font-family:'Cinzel Decorative',var(--display);font-weight:900;font-size:clamp(27px,5.4vw,50px);letter-spacing:1.5px;margin:10px 0 10px;
+    background:linear-gradient(180deg,#FFF2C4 0%,#FBD774 28%,#EBB049 56%,#C7891F 84%,#9A6717 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+    text-shadow:-1px -1px 0 #4a2f12,1px -1px 0 #4a2f12,-1px 1px 0 #4a2f12,1px 1px 0 #4a2f12,0 4px 13px rgba(0,0,0,.62),0 0 22px rgba(217,168,69,.28)}
   .head p{color:var(--steel);max-width:560px;margin:0 auto;font-size:15px}
 
   .regions{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:40px 28px 90px;
@@ -85,6 +88,9 @@
   .enter.dim{background:rgba(255,255,255,.04);color:var(--steel);box-shadow:inset 0 0 0 1px var(--line);cursor:default}
   footer{position:relative;z-index:1;border-top:1px solid var(--line);padding:30px;text-align:center;color:var(--steel);font-size:12px}
   footer .base{color:var(--signal)}
+  footer .social{margin-top:12px;display:flex;gap:20px;justify-content:center;font-size:13px;font-weight:600}
+  footer .social a{display:inline-flex;align-items:center;gap:6px;color:var(--steel);transition:color .15s}
+  footer .social a:hover{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -113,7 +119,13 @@
 
 <div class="regions" id="regions"></div>
 
-<footer>HOLDFAST · built on <span class="base">Base</span> ⚓ · one continent is live; more are charted</footer>
+<footer>
+  <div>HOLDFAST · built on <span class="base">Base</span> ⚓ · one continent is live; more are charted</div>
+  <div class="social">
+    <a href="https://x.com/holdfast_fdn" target="_blank" rel="noopener">𝕏 holdfast_fdn</a>
+    <a href="https://t.me/holdfast_gmbot" target="_blank" rel="noopener">✈ @holdfast_gmbot</a>
+  </div>
+</footer>
 
 <script>
 // Region 0 is the deployed, on-chain continent. The rest are charted lore
