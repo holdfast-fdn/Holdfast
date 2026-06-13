@@ -1,3 +1,4 @@
 node_modules/
 out/*.png
 !out/launch.mp4
+public/assets/

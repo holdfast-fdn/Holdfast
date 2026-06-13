@@ -23,33 +23,117 @@ const GOLD_TEXT: React.CSSProperties = {
   textShadow: "0 6px 30px rgba(0,0,0,.6)",
 };
 
-// ---- atmosphere ----
-const STARS = new Array(46).fill(0).map((_, i) => ({
-  x: (i * 97.13) % 100,
-  y: (i * 53.7 + 11) % 100,
-  s: (i % 3) + 1,
-  ph: i * 7,
-}));
+// ---- realistic stormy floating-isles background ----
+const wave = (frame: number, per: number, amp: number, ph: number) =>
+  amp * Math.sin((2 * Math.PI * frame) / per + ph);
 
-const Background: React.FC = () => {
+// island layers: depth 1 = foreground (bright, big, fast bob), <1 = far (dim, blurred, slow)
+const ISLANDS = [
+  { src: "isl-6.png", x: 3,  y: 40, w: 330, depth: 1.0,  amp: 15, per: 96,  ph: 0.0 },
+  { src: "isl-3.png", x: 72, y: 37, w: 350, depth: 1.0,  amp: 17, per: 110, ph: 0.9 },
+  { src: "isl-2.png", x: 25, y: 60, w: 180, depth: 0.72, amp: 12, per: 86,  ph: 2.1 },
+  { src: "isl-5.png", x: 63, y: 63, w: 165, depth: 0.66, amp: 11, per: 102, ph: 3.3 },
+  { src: "isl-1.png", x: -3, y: 18, w: 150, depth: 0.5,  amp: 9,  per: 80,  ph: 1.5 },
+  { src: "isl-8.png", x: 87, y: 16, w: 138, depth: 0.46, amp: 8,  per: 92,  ph: 4.0 },
+];
+
+const FloatingIslands: React.FC = () => {
   const frame = useCurrentFrame();
-  const pulse = 0.5 + 0.5 * Math.sin(frame / 34);
-  const drift = Math.sin(frame / 70) * 16;
   return (
-    <AbsoluteFill style={{ background: `radial-gradient(125% 100% at 50% 26%, #15233f 0%, ${NYX} 62%)` }}>
-      {STARS.map((st, i) => {
-        const tw = 0.25 + 0.55 * Math.abs(Math.sin((frame + st.ph) / 38));
+    <AbsoluteFill>
+      {ISLANDS.map((is, i) => {
+        const bob = wave(frame, is.per, is.amp, is.ph);
+        const drift = wave(frame, is.per * 3.4, is.amp * 0.5, is.ph);
+        const sway = wave(frame, is.per * 2.2, 1.1, is.ph);
+        const d = is.depth;
         return (
-          <div key={i} style={{
-            position: "absolute", left: `${st.x}%`, top: `${st.y}%`,
-            width: st.s, height: st.s, borderRadius: "50%",
-            background: "#cfe0ff", opacity: tw * 0.7,
+          <Img key={i} src={staticFile(`assets/${is.src}`)} style={{
+            position: "absolute", left: `${is.x}%`, top: `${is.y}%`, width: is.w,
+            transform: `translate(${drift}px, ${bob}px) rotate(${sway}deg)`,
+            filter: `brightness(${0.46 + 0.26 * d}) saturate(${0.5 + 0.22 * d}) contrast(1.06) hue-rotate(-6deg) blur(${(1 - d) * 1.8}px) drop-shadow(0 20px 26px rgba(0,10,18,.5))`,
+            opacity: 0.45 + 0.55 * d,
           }} />
         );
       })}
-      <AbsoluteFill style={{ background: `radial-gradient(42% 30% at ${50 + drift / 5}% 42%, rgba(217,168,69,${0.1 + 0.07 * pulse}), transparent 70%)` }} />
-      <AbsoluteFill style={{ background: `radial-gradient(34% 24% at ${50 - drift / 4}% 50%, rgba(63,184,206,0.1), transparent 70%)` }} />
-      <AbsoluteFill style={{ boxShadow: "inset 0 0 320px rgba(0,0,0,.85)" }} />
+    </AbsoluteFill>
+  );
+};
+
+const CLOUDS = [
+  { src: "cloud-1.png", y: -2, w: 660, per: 1300, dir: 1,  op: 0.42, b: 0.55, o: 0.0 },
+  { src: "cloud-2.png", y: 8,  w: 720, per: 1600, dir: -1, op: 0.5,  b: 0.5,  o: 0.3 },
+  { src: "cloud-4.png", y: 28, w: 560, per: 1900, dir: 1,  op: 0.34, b: 0.45, o: 0.55 },
+  { src: "cloud-3.png", y: 46, w: 640, per: 2300, dir: -1, op: 0.26, b: 0.6,  o: 0.15 },
+];
+
+const StormClouds: React.FC = () => {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill>
+      {CLOUDS.map((c, i) => {
+        const t = (frame / c.per + c.o) % 1;
+        const x = c.dir > 0 ? -25 + t * 150 : 135 - t * 150;
+        return (
+          <Img key={i} src={staticFile(`assets/${c.src}`)} style={{
+            position: "absolute", top: `${c.y}%`, left: `${x}%`, width: c.w,
+            opacity: c.op, mixBlendMode: "screen", filter: `brightness(${c.b}) blur(1.2px)`,
+          }} />
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
+
+const GodRays: React.FC = () => {
+  const frame = useCurrentFrame();
+  const p1 = 0.5 + 0.5 * Math.sin(frame / 38);
+  const p2 = 0.5 + 0.5 * Math.sin(frame / 50 + 1);
+  const Ray: React.FC<{ left: number; rot: number; op: number }> = ({ left, rot, op }) => (
+    <div style={{
+      position: "absolute", top: "-12%", left: `${left}%`, width: 150, height: "95%",
+      background: `linear-gradient(to bottom, rgba(135,235,245,${op}) 0%, rgba(135,235,245,0) 76%)`,
+      transform: `rotate(${rot}deg)`, transformOrigin: "top center",
+      filter: "blur(16px)", mixBlendMode: "screen",
+    }} />
+  );
+  return (
+    <AbsoluteFill>
+      <Ray left={19} rot={13 + wave(frame, 200, 1.2, 0)} op={0.15 + 0.1 * p1} />
+      <Ray left={73} rot={-14 + wave(frame, 240, 1.2, 2)} op={0.17 + 0.1 * p2} />
+    </AbsoluteFill>
+  );
+};
+
+const Ocean: React.FC = () => {
+  const frame = useCurrentFrame();
+  const shimmer = wave(frame, 130, 22, 0);
+  return (
+    <AbsoluteFill style={{ top: "66%" }}>
+      <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(20,58,70,0) 0%, #103039 26%, #0a1f27 72%, #081820 100%)" }} />
+      <div style={{
+        position: "absolute", inset: 0, opacity: 0.22, mixBlendMode: "screen",
+        background: "repeating-linear-gradient(93deg, transparent 0 46px, rgba(120,205,215,.16) 46px 50px)",
+        transform: `translateX(${shimmer}px)`,
+      }} />
+      <div style={{
+        position: "absolute", top: -2, left: 0, right: 0, height: 80,
+        background: "linear-gradient(180deg, rgba(170,210,215,.18), transparent)", filter: "blur(6px)",
+      }} />
+    </AbsoluteFill>
+  );
+};
+
+const Background: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ background: "linear-gradient(180deg, #1b2838 0%, #21323f 32%, #1b3038 54%, #122730 100%)" }}>
+      <AbsoluteFill style={{ background: "radial-gradient(78% 38% at 50% 58%, rgba(150,200,205,.15), transparent 70%)" }} />
+      <StormClouds />
+      <GodRays />
+      <FloatingIslands />
+      <Ocean />
+      {/* moody teal color-grade + vignette to unify the scene */}
+      <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(12,32,42,.22), rgba(6,16,22,.48))", mixBlendMode: "multiply" }} />
+      <AbsoluteFill style={{ boxShadow: "inset 0 0 360px rgba(0,8,14,.92)" }} />
     </AbsoluteFill>
   );
 };
@@ -63,9 +147,14 @@ const useReveal = (delay = 0, dur = 18) => {
   return { opacity, y: interpolate(s, [0, 1], [26, 0]) };
 };
 
-const Center: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const Center: React.FC<{ children: React.ReactNode; scrim?: number }> = ({ children, scrim = 0.6 }) => (
   <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center", padding: 80 }}>
-    {children}
+    <div style={{
+      position: "absolute", width: 940, height: 560, borderRadius: "50%",
+      background: `radial-gradient(closest-side, rgba(6,12,20,${scrim}), rgba(6,12,20,0))`,
+      filter: "blur(10px)",
+    }} />
+    <div style={{ position: "relative" }}>{children}</div>
   </AbsoluteFill>
 );
 
