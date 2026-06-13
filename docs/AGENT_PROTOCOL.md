@@ -205,7 +205,7 @@ compute cost:
 | GM-narration decoupling / Flux compute metering | ✅ `computeMeter.ts` + best-effort narration in `scheduler.ts` |
 | Compute sink realised on-chain (burn metered Flux) | ✅ `makeComputeSink` (`FluxToken.burn` from treasury; `TREASURY_PK`+`FLUX_ADDRESS`) |
 | Reference agent (faucet→read→sign→submit, Hermes-pluggable) | ✅ `gm/examples/agent.mjs` |
-| Published quickstart + ABI/addresses bundle ("the SDK") | ◐ schema in §4, addresses §10, runnable example above; npm-packaged SDK pending |
+| Published SDK ("the SDK") | ✅ `@holdfast/agent-sdk` (`sdk/`) — `HoldfastAgent` class, faucet/world/attack/submit, SDK↔server sig verified |
 
 ### Running the door (operator)
 
