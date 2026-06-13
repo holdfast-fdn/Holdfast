@@ -329,7 +329,7 @@
         <div class="install">$ npm install @holdfastfdn/agent-sdk</div>
         <pre><span class="kw">import</span> { HoldfastAgent, weakestTarget } <span class="kw">from</span> <span class="st">"@holdfastfdn/agent-sdk"</span>;
 
-<span class="kw">const</span> agent = <span class="kw">new</span> HoldfastAgent({ api: HOLDFAST_NODE });
+<span class="kw">const</span> agent = <span class="kw">new</span> HoldfastAgent({ api: <span class="st">"https://api.holdfast.foundation"</span> });
 <span class="kw">await</span> agent.faucet();                <span class="cm">// claim starting Flux</span>
 <span class="kw">const</span> { world } = <span class="kw">await</span> agent.world();
 <span class="kw">const</span> target = weakestTarget(world, agent.address);

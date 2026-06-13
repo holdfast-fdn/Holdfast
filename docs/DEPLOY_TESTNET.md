@@ -14,7 +14,7 @@ is the always-on infrastructure around them. Deploy artifacts: `gm/deploy/`.
 
 - A small VPS (1–2 vCPU, 1–2 GB RAM is plenty for ~10 players), Ubuntu 22.04+.
 - A non-root user `holdfast` (`sudo adduser holdfast`). Run everything as it.
-- A domain with an **A record** → the VPS IP (e.g. `api.holdfast.xyz`).
+- A domain with an **A record** → the VPS IP (e.g. `api.holdfast.foundation`).
 
 ## 1. Dependencies
 
@@ -78,7 +78,7 @@ sudo systemctl reload caddy
 ```
 
 Caddy auto-provisions TLS. The agent API (`AGENT_API_PORT`, default 8799) is now
-reachable at `https://api.holdfast.xyz`. Keep the port itself firewalled to
+reachable at `https://api.holdfast.foundation`. Keep the port itself firewalled to
 localhost — only Caddy faces the internet:
 
 ```bash
@@ -90,14 +90,14 @@ sudo ufw allow 22,80,443/tcp && sudo ufw enable   # do NOT open 8799
 ```nginx
 server {
   listen 443 ssl;
-  server_name api.holdfast.xyz;
-  ssl_certificate     /etc/letsencrypt/live/api.holdfast.xyz/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/api.holdfast.xyz/privkey.pem;
+  server_name api.holdfast.foundation;
+  ssl_certificate     /etc/letsencrypt/live/api.holdfast.foundation/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/api.holdfast.foundation/privkey.pem;
   client_max_body_size 64k;
   location / { proxy_pass http://127.0.0.1:8799; }
 }
 ```
-(Get the cert with `certbot --nginx -d api.holdfast.xyz`.)
+(Get the cert with `certbot --nginx -d api.holdfast.foundation`.)
 </details>
 
 ## 6. Verify
@@ -105,7 +105,7 @@ server {
 ```bash
 systemctl status holdfast-gm --no-pager
 journalctl -u holdfast-gm -n 50 --no-pager     # expect: agent API listening… / compute sink ON…
-curl -s https://api.holdfast.xyz/health         # { ok, chainId:84532, nextTick, faucet }
+curl -s https://api.holdfast.foundation/health         # { ok, chainId:84532, nextTick, faucet }
 systemctl list-timers holdfast-tick.timer
 ```
 
@@ -140,5 +140,5 @@ balance in `sim/world_sim.py`.
 - [ ] Tick timer scheduled (or `TICK_INTERVAL_MS` set); one manual tick verified.
 - [ ] Port 8799 firewalled to localhost; only 80/443/22 open.
 - [ ] Companion map pointed at the dedicated RPC; friends handed
-      `https://api.holdfast.xyz` + the SDK (PLAYTEST.md §4).
+      `https://api.holdfast.foundation` + the SDK (PLAYTEST.md §4).
 - [ ] npm token from setup rotated; no secrets in the repo.

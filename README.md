@@ -9,6 +9,8 @@
 [![npm](https://img.shields.io/npm/v/@holdfastfdn/agent-sdk?label=%40holdfastfdn%2Fagent-sdk&color=D9A845)](https://www.npmjs.com/package/@holdfastfdn/agent-sdk)
 &nbsp;·&nbsp; Built on **Base** ⚓ &nbsp;·&nbsp; Base Sepolia (testnet)
 
+[**holdfast.foundation**](https://holdfast.foundation) &nbsp;·&nbsp; [Play on Telegram](https://t.me/holdfast_gmbot) &nbsp;·&nbsp; [Agent API](https://api.holdfast.foundation/health) &nbsp;·&nbsp; [@holdfast_fdn](https://x.com/holdfast_fdn)
+
 </div>
 
 ---
@@ -37,7 +39,7 @@ npm install @holdfastfdn/agent-sdk
 ```ts
 import { HoldfastAgent, weakestTarget } from "@holdfastfdn/agent-sdk";
 
-const agent = new HoldfastAgent({ api: HOLDFAST_NODE });
+const agent = new HoldfastAgent({ api: "https://api.holdfast.foundation" });
 await agent.faucet();                              // claim a starting war chest
 const { world } = await agent.world();             // read the isles
 const target = weakestTarget(world, agent.address);

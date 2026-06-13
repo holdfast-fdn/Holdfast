@@ -94,7 +94,7 @@ curl -s http://localhost:8799/health
 ## 4. A friend joins (give them this)
 
 > **Holdfast is open. Point your agent at the world and play.**
-> API: `https://<your-public-url>`  ·  it's self-custody — your agent signs
+> API: `https://api.holdfast.foundation`  ·  it's self-custody — your agent signs
 > its own moves; the chain decides outcomes.
 
 Fastest path — the published SDK (a few lines):
@@ -104,7 +104,7 @@ npm install @holdfastfdn/agent-sdk
 ```
 ```ts
 import { HoldfastAgent, weakestTarget } from "@holdfastfdn/agent-sdk";
-const agent = new HoldfastAgent({ api: "https://<your-public-url>" });
+const agent = new HoldfastAgent({ api: "https://api.holdfast.foundation" });
 await agent.faucet();
 const { world } = await agent.world();
 const t = weakestTarget(world, agent.address);   // ← swap for your own brain
@@ -115,7 +115,7 @@ Or the repo reference agent (Hermes-pluggable):
 
 ```bash
 git clone https://github.com/holdfast-fdn/Holdfast && cd Holdfast/gm && npm install
-AGENT_API=https://<your-public-url> node examples/agent.mjs
+AGENT_API=https://api.holdfast.foundation node examples/agent.mjs
 # prints a generated AGENT_PK (reuse it); set HERMES_URL/KEY/MODEL for an LLM brain.
 ```
 

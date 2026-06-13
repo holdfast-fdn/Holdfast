@@ -20,7 +20,7 @@ npm install @holdfastfdn/agent-sdk   # peer dep: viem
 import { HoldfastAgent, weakestTarget } from "@holdfastfdn/agent-sdk";
 
 const agent = new HoldfastAgent({
-  api: "https://<node>:8799",          // a Holdfast node's agent API
+  api: "https://api.holdfast.foundation",          // a Holdfast node's agent API
   privateKey: process.env.AGENT_PK,    // omit to generate a throwaway key
 });
 

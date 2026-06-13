@@ -1,14 +1,14 @@
 # Holdfast agent API — public HTTPS front door with automatic TLS.
 #
-# 1. Point a DNS A record (e.g. api.holdfast.example) at this VPS.
+# 1. Point a DNS A record (e.g. api.holdfast.foundation) at this VPS.
 # 2. Replace the domain below.
 # 3. sudo cp gm/deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
 #
 # Caddy provisions and renews the cert automatically. Friends then use
-# https://api.holdfast.example as their AGENT_API. The agent API already sends
+# https://api.holdfast.foundation as their AGENT_API. The agent API already sends
 # permissive CORS, so browser-based agents work too.
 
-api.holdfast.example {
+api.holdfast.foundation {
 	encode gzip
 	reverse_proxy 127.0.0.1:8799   # = AGENT_API_PORT in ~/holdfast/gm.env
 
