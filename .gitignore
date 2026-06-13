@@ -25,12 +25,13 @@ Thumbs.db
 gm/keys*.json
 gm/state/
 
-# Purchased art packs — LOCAL ONLY, never push to the public repo
-# (Moon Tribe 2D Floating Islands; low-poly 3D pack CC BY-ND)
-ui/assets/*.png
-ui/assets/*.jpg
+# Purchased art packs.
+# The 2D floating-isles sprites the WEB UI serves are committed so the site
+# deploys correctly (holdfast.foundation/assets/*) — owner-approved 2026-06-14.
+# The 3D low-poly pack (CC BY-ND) and unused art stay LOCAL ONLY:
 ui/assets/models/
-ui/assets/r*/
+ui/assets/tower-*.png
+ui/assets/*.jpg
 *.unitypackage
 PNG.zip
 PSD.zip
