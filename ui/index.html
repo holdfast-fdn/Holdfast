@@ -89,13 +89,25 @@
   .hero::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;
     width:min(900px,94vw);height:min(560px,82vh);
     background:radial-gradient(closest-side, rgba(120,140,180,.20) 0%, rgba(90,110,150,.10) 45%, transparent 72%);filter:blur(34px)}
-  .logo-wrap{position:relative;width:min(210px,46vw);margin-bottom:14px}
-  /* soft pool of light grounds the emblem so it reads as part of the scene */
-  .logo-wrap::before{content:"";position:absolute;inset:-28% -22%;border-radius:50%;z-index:-1;
-    background:radial-gradient(closest-side, rgba(217,168,69,.22) 0%, rgba(63,184,206,.10) 42%, transparent 72%);
-    filter:blur(22px)}
-  .logo-wrap img{width:100%;display:block;
-    filter:drop-shadow(0 18px 36px rgba(0,8,20,.6)) drop-shadow(0 0 1px rgba(11,14,21,.9))}
+  .logo-wrap{position:relative;width:min(220px,48vw);margin-bottom:12px}
+  /* the emblem lights the storm — a gold/cyan bloom spilling into the clouds */
+  .logo-wrap::before{content:"";position:absolute;inset:-52% -46%;border-radius:50%;z-index:-1;
+    background:radial-gradient(closest-side, rgba(217,168,69,.34) 0%, rgba(63,184,206,.18) 36%, rgba(63,184,206,.05) 56%, transparent 72%);
+    filter:blur(34px);animation:bloompulse 6s ease-in-out infinite}
+  @keyframes bloompulse{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+  .logo-wrap img.float{width:100%;display:block;position:relative;z-index:2;
+    filter:drop-shadow(0 18px 30px rgba(0,8,20,.65)) drop-shadow(0 0 16px rgba(217,168,69,.28)) drop-shadow(0 0 1px rgba(11,14,21,.9))}
+  /* drifting mist veils the anchor's base so it emerges from the clouds, not pasted on */
+  .logo-wrap .logomist{position:absolute;left:-52%;bottom:-30%;width:204%;height:auto;z-index:3;pointer-events:none;
+    opacity:.74;filter:brightness(.46) saturate(.6) blur(2.5px);
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 46%);mask-image:linear-gradient(180deg,transparent 0%,#000 46%);
+    animation:mistdrift 24s ease-in-out infinite}
+  .logo-wrap .logomist2{position:absolute;left:-34%;bottom:6%;width:158%;height:auto;z-index:3;pointer-events:none;
+    opacity:.4;filter:brightness(.56) saturate(.55) blur(3.5px);
+    -webkit-mask-image:radial-gradient(62% 78% at 50% 64%,#000 10%,transparent 76%);mask-image:radial-gradient(62% 78% at 50% 64%,#000 10%,transparent 76%);
+    animation:mistdrift2 31s ease-in-out infinite}
+  @keyframes mistdrift{0%,100%{transform:translate(-7%,0)}50%{transform:translate(7%,-3%)}}
+  @keyframes mistdrift2{0%,100%{transform:translate(7%,0)}50%{transform:translate(-9%,2%)}}
   .logo-wrap .float{animation:bob 6s ease-in-out infinite}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
   /* gold fantasy title — embossed, dark-outlined */
@@ -207,7 +219,11 @@
 <div class="wrap">
   <!-- HERO -->
   <header class="hero">
-    <div class="logo-wrap"><img class="float" src="../brand/holdfast-logo.png" alt="The Winged Anchor"/></div>
+    <div class="logo-wrap">
+      <img class="float" src="../brand/holdfast-logo.png" alt="The Winged Anchor"/>
+      <img class="logomist" src="assets/cloud-1.png" alt="" onerror="this.remove()"/>
+      <img class="logomist2" src="assets/cloud-4.png" alt="" onerror="this.remove()"/>
+    </div>
     <h1 class="title">Introducing Holdfast.<br>The Sundered Isles.</h1>
     <div class="subtitle">The GM proposes.<br>The chain disposes.</div>
     <p class="sub">A persistent on-chain world run by an AI Game Master. Speak your orders in plain
