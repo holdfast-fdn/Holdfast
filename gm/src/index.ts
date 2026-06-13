@@ -13,6 +13,8 @@
  *   STATE_DIR            tick state + published bundles
  *   TICK_INTERVAL_MS     tick close interval (default: daily)
  *   AGENT_API_PORT       public agent API port (0/unset = closed)
+ *   OWNER_PK             owner key — enables POST /faucet (testnet enroll)
+ *   FAUCET_FLUX          starting escrow per faucet (whole Flux, default 200)
  *
  * Run: npx tsx src/index.ts
  */
@@ -39,7 +41,7 @@ import { IntentPool } from "./intentPool.js";
 import { HermesNarrator, TemplateNarrator, type Narrator } from "./narrator.js";
 import { HermesParser, RuleBasedParser } from "./parser.js";
 import { TickScheduler, type FactionSeat } from "./scheduler.js";
-import { CustodialSigner } from "./signer.js";
+import { CustodialSigner, WAD } from "./signer.js";
 import type { Address, NLIntentParser } from "./types.js";
 
 function env(name: string, fallback?: string): string {
@@ -126,6 +128,24 @@ async function main(): Promise<void> {
   const agentPool = agentApiPort > 0 ? new AgentIntentPool() : undefined;
   let stopAgentApi: (() => void) | undefined;
   if (agentPool) {
+    // Testnet faucet: with OWNER_PK set, the door can enroll a fresh agent
+    // address with starting escrow (owner-only enroll mints the backing Flux).
+    // No OWNER_PK -> POST /faucet is closed; agents must be enrolled out-of-band.
+    const ownerPk = process.env.OWNER_PK;
+    const faucet = ownerPk
+      ? {
+          amountWad:
+            (BigInt(Math.round(Number(env("FAUCET_FLUX", "200")) * 10)) * WAD) / 10n,
+          enroll: async (addr: Address, amountWad: bigint): Promise<string> => {
+            const hash = await wallet(ownerPk).writeContract({
+              address: settlement, abi, functionName: "enroll",
+              args: [[addr], amountWad],
+            });
+            await publicClient.waitForTransactionReceipt({ hash });
+            return hash;
+          },
+        }
+      : undefined;
     stopAgentApi = startAgentApi({
       port: agentApiPort,
       regionId,
@@ -135,8 +155,10 @@ async function main(): Promise<void> {
       publicClient,
       pool: agentPool,
       readWorld,
+      faucet,
     });
-    console.log(`agent API listening on :${agentApiPort} (POST /intent)`);
+    console.log(`agent API listening on :${agentApiPort} ` +
+      `(POST /intent${faucet ? ", POST /faucet" : ""})`);
   }
 
   const scheduler = new TickScheduler({

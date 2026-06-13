@@ -6,6 +6,7 @@
  *   GET  /health   liveness + the tick currently accepting moves
  *   GET  /world    region params + tiles + (optional) your escrow
  *   POST /intent   submit one EIP-712-signed move for the next tick
+ *   POST /faucet   (testnet) enroll an address with starting escrow, once
  *
  * The service validates every submission against the SAME schema the contract
  * verifies (signer.ts: INTENT_TYPES + holdfastDomain) and the live chain state
@@ -33,6 +34,14 @@ export interface AgentApiDeps {
   pool: AgentIntentPool;
   /** convenience world view for GET /world (faction reader is reused) */
   readWorld: (regionId: bigint) => Promise<unknown>;
+  /** optional testnet faucet: enroll an address with starting escrow (owner
+   *  tx). Absent (no OWNER_PK) → POST /faucet returns 404. Self-funding only
+   *  ever makes sense on testnet — never wire this to mainnet value. */
+  faucet?: {
+    /** owner-signed enroll(addr, amountWad) -> tx hash, receipt awaited */
+    enroll: (addr: Address, amountWad: bigint) => Promise<string>;
+    amountWad: bigint;
+  };
 }
 
 const MAX_BODY = 16 * 1024; // 16 KB — an intent is tiny; reject anything large
@@ -168,6 +177,52 @@ async function handleIntent(d: AgentApiDeps, raw: string): Promise<[number, unkn
   return [200, { ok: true, queued: true, regionId: regionId.toString(), tick: tick.toString(), tileId: tileId.toString(), attacker }];
 }
 
+/** one-time-per-address faucet guard, shared across requests */
+interface FaucetGuard {
+  done: Set<string>;     // addresses already fauceted this process
+  inflight: Set<string>; // addresses with an enroll tx in progress
+}
+
+async function handleFaucet(
+  d: AgentApiDeps,
+  raw: string,
+  guard: FaucetGuard,
+): Promise<[number, unknown]> {
+  if (!d.faucet) return [404, { error: "faucet disabled on this node" }];
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(raw || "{}");
+  } catch {
+    return [400, { error: "invalid JSON" }];
+  }
+  const addr = String(body.address ?? "").toLowerCase() as Address;
+  if (!/^0x[0-9a-f]{40}$/.test(addr)) return [400, { error: "bad address" }];
+
+  if (guard.done.has(addr)) return [409, { error: "address already funded" }];
+  if (guard.inflight.has(addr)) return [429, { error: "funding already in progress" }];
+
+  // on-chain truth: only ever fund an address that has never been enrolled,
+  // so the faucet can't be drained by re-requesting (free escrow = Sybil).
+  const escrow = await readEscrowWad(d, addr);
+  if (escrow > 0n) {
+    guard.done.add(addr);
+    return [409, { error: "address already has escrow", escrow: escrow.toString() }];
+  }
+
+  guard.inflight.add(addr);
+  try {
+    const hash = await d.faucet.enroll(addr, d.faucet.amountWad);
+    guard.done.add(addr);
+    return [200, {
+      ok: true, address: addr, escrow: d.faucet.amountWad.toString(), tx: hash,
+    }];
+  } catch (err) {
+    return [502, { error: `enroll failed: ${(err as Error).message}` }];
+  } finally {
+    guard.inflight.delete(addr);
+  }
+}
+
 function toBig(v: unknown): bigint | null {
   if (typeof v === "bigint") return v;
   if (typeof v === "number" && Number.isInteger(v)) return BigInt(v);
@@ -180,6 +235,7 @@ function strip(v: unknown): string {
 }
 
 export function startAgentApi(d: AgentApiDeps): () => void {
+  const guard: FaucetGuard = { done: new Set(), inflight: new Set() };
   const server = createServer(async (req, res) => {
     try {
       if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
@@ -190,7 +246,14 @@ export function startAgentApi(d: AgentApiDeps): () => void {
         return send(res, 200, {
           ok: true, regionId: d.regionId.toString(),
           nextTick: (region.lastTick + 1n).toString(), queued: d.pool.size(),
+          faucet: d.faucet ? d.faucet.amountWad.toString() : null,
         });
+      }
+
+      if (req.method === "POST" && url.pathname === "/faucet") {
+        const raw = await readBody(req);
+        const [status, out] = await handleFaucet(d, raw, guard);
+        return send(res, status, out);
       }
 
       if (req.method === "GET" && url.pathname === "/world") {

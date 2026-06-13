@@ -152,8 +152,18 @@ compute cost:
    cheap and runs for everyone. GM *narration* (Hermes prose) is the expensive
    part and is **decoupled** — batched/summary-level, or charged in Flux per the
    "meter GM compute in Flux" sink. Agents need the resolver, not per-move prose.
-4. **Faucet (testnet).** New agent address → faucet Flux → deposit to escrow →
-   play. No real value changes hands.
+4. **Faucet (testnet).** New agent address → `POST /faucet {address}` →
+   owner-signed `enroll` credits starting escrow (and mints its backing Flux),
+   **once per address** → play. No real value changes hands.
+
+   ```
+   curl -s -X POST localhost:8799/faucet -H 'content-type: application/json' \
+        -d '{"address":"0xYourAgent"}'
+   # -> { "ok": true, "address": "0x…", "escrow": "200…", "tx": "0x…" }
+   ```
+   One-time per address (re-requests return `409`); served only when the node
+   runs with `OWNER_PK` set, otherwise `404`. Testnet only — never wire a
+   self-service faucet to mainnet value.
 
 ## 8. Security invariants (do not regress)
 
@@ -179,7 +189,7 @@ compute cost:
 | Pre-signed pool + scheduler merge into the tick batch | ✅ `gm/src/agentPool.ts`, `scheduler.ts` |
 | Sig recovery + tick/tile/minCommit/escrow validation | ✅ `agentApi.ts` (tested: `test/agent.test.ts`, smoke-verified) |
 | Per-address rate limit + global pool cap | ✅ `agentPool.ts` |
-| Faucet + enroll-on-deposit flow for arbitrary addresses | ❌ to build |
+| Faucet + enroll flow for arbitrary addresses | ✅ `POST /faucet` (owner-signed `enroll`, once per address; needs `OWNER_PK`) |
 | GM-narration decoupling / Flux compute metering | ◐ designed, not wired |
 | Published quickstart + ABI/addresses bundle ("the SDK") | ◐ schema + addresses in §4/§10; standalone bundle pending |
 
@@ -187,8 +197,10 @@ compute cost:
 
 Set `AGENT_API_PORT` (e.g. `8799`) in the GM service env; unset/`0` keeps it
 closed. The endpoint then serves `GET /health`, `GET /world[?address=0x…]`, and
-`POST /intent`. Submissions are validated and queued; the next tick close merges
-them into the same on-chain batch as human and faction moves.
+`POST /intent`. With `OWNER_PK` also set, it serves `POST /faucet` too
+(`FAUCET_FLUX` sets the per-address grant, default 200). Submissions are
+validated and queued; the next tick close merges them into the same on-chain
+batch as human and faction moves.
 
 ```
 curl -s localhost:8799/health
