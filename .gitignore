@@ -30,6 +30,7 @@ gm/state/
 ui/assets/*.png
 ui/assets/*.jpg
 ui/assets/models/
+ui/assets/r*/
 *.unitypackage
 PNG.zip
 PSD.zip

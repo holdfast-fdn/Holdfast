@@ -38,7 +38,9 @@
   .crest{position:absolute;top:20px;left:22px;display:flex;align-items:center;gap:13px;z-index:5}
   .crest svg{width:46px;height:46px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
   .crest .nm{font-family:var(--display);font-weight:900;font-size:20px;letter-spacing:2px;line-height:1;text-shadow:0 2px 8px rgba(5,30,55,.8)}
-  .crest .sb{font-size:9.5px;letter-spacing:3.5px;color:var(--gold);margin-top:4px;text-shadow:0 1px 4px rgba(5,30,55,.9)}
+  .crest{text-decoration:none}
+  .crest .sb{font-size:9.5px;letter-spacing:3.5px;color:var(--gold);margin-top:4px;text-shadow:0 1px 4px rgba(5,30,55,.9);transition:color .2s}
+  .crest:hover .sb{color:var(--marble)}
   .resbar{position:absolute;top:20px;right:22px;display:flex;gap:8px;z-index:5}
   .res{display:flex;align-items:center;gap:9px;padding:9px 15px;background:linear-gradient(180deg,rgba(16,24,38,.92),rgba(9,16,28,.94));backdrop-filter:blur(8px);border:1px solid #2c3c50;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
   .res .ic{font-size:16px}.res .k{font-size:8.5px;letter-spacing:1.5px;color:var(--steel);text-transform:uppercase}
@@ -142,13 +144,13 @@
   </svg>
   <div class="vig"></div>
 
-  <div class="crest">
+  <a class="crest" href="world.html" title="Back to the world">
     <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
       <rect x="16" y="16" width="480" height="480" rx="100" fill="#11161F" stroke="#232B3C" stroke-width="8"/>
       <g fill="#D9A845"><polygon points="200,176 86,136 102,162 200,204"/><polygon points="200,214 110,176 124,202 200,240"/><polygon points="312,176 426,136 410,162 312,204"/><polygon points="312,214 402,176 388,202 312,240"/><circle cx="256" cy="104" r="28" fill="none" stroke="#D9A845" stroke-width="18"/><rect x="176" y="158" width="160" height="32" rx="6"/><rect x="158" y="152" width="22" height="44" rx="4"/><rect x="332" y="152" width="22" height="44" rx="4"/><rect x="241" y="162" width="30" height="178"/><polygon points="241,340 271,340 256,388"/><path d="M140 300 Q256 426 372 300 L342 278 Q256 372 170 278 Z"/><polygon points="140,304 122,252 174,270"/><polygon points="372,304 390,252 338,270"/></g>
     </svg>
-    <div><div class="nm">HOLDFAST</div><div class="sb">THE SUNDERED ISLES</div></div>
-  </div>
+    <div><div class="nm">HOLDFAST</div><div class="sb" id="regionName">‹ THE SUNDERED ISLES</div></div>
+  </a>
   <div class="resbar">
     <div class="res"><span class="ic">🪙</span><div><div class="k">Flux</div><div class="v flux">340</div></div></div>
     <div class="res"><span class="ic">🏴</span><div><div class="k">Isles</div><div class="v gold">2</div></div></div>
@@ -287,7 +289,11 @@ let selected=5;
 /* ---------------- optional sprite assets (ui/assets/) ----------------
    Drop PNGs there and they replace the procedural art automatically;
    anything missing falls back to the SVG drawings. See assets/README.md. */
-const ISLAND_ART=tiles_i=>'assets/isl-'+(tiles_i+1)+'.png'; // one painting per tile
+// per-region island art: region 0 -> assets/, region N -> assets/rN/
+const REGION_N=Number(Q.get('region')||'0');
+const REGION_NAMES={0:'THE SUNDERED ISLES',1:'THE EMBER REACH',2:'THE FROSTMARK'};
+const ART_DIR=REGION_N>0?'assets/r'+REGION_N+'/':'assets/';
+const ISLAND_ART=tiles_i=>ART_DIR+'isl-'+(tiles_i+1)+'.png'; // one painting per tile
 const CLOUD_ART=['assets/cloud-1.png','assets/cloud-2.png','assets/cloud-3.png','assets/cloud-4.png'];
 const ROCK_ART=['assets/rock-1.png','assets/rock-2.png'];
 const TOWER_ART=[1,2,3,4,5].map(n=>'assets/tower-'+n+'.png');
@@ -638,6 +644,7 @@ if(!LIVE.rpc){ // the mock countdown belongs to demo mode only
 }
 
 preloadAssets().then(async()=>{
+  document.getElementById('regionName').textContent='‹ '+(REGION_NAMES[REGION_N]||'REGION '+REGION_N);
   let live=false;
   if(LIVE.rpc&&LIVE.settlement){
     document.querySelector('.clock .k').innerHTML='<span class="dot"></span>LIVE';
