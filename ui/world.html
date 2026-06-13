@@ -22,6 +22,13 @@
   .c1{width:700px;height:340px;top:4%;left:-12%;animation-duration:100s}
   .c2{width:560px;height:300px;bottom:2%;right:-12%;opacity:.1;animation-duration:130s;animation-direction:reverse}
   @keyframes drift{0%{transform:translateX(-40px)}50%{transform:translateX(60px)}100%{transform:translateX(-40px)}}
+  .rcloud{position:absolute;pointer-events:none;mix-blend-mode:screen;opacity:.45;filter:blur(.8px);
+    will-change:transform;animation:cdrift linear infinite}
+  @keyframes cdrift{from{transform:translateX(-32vw)}to{transform:translateX(132vw)}}
+  .rc1{top:8%;width:38vw;min-width:320px;opacity:.46;animation-duration:95s;animation-delay:-14s}
+  .rc2{top:33%;width:28vw;min-width:260px;opacity:.3;animation-duration:130s;animation-delay:-70s}
+  .rc3{top:63%;width:30vw;min-width:260px;opacity:.34;animation-duration:110s;animation-delay:-40s}
+  .rc4{top:82%;width:34vw;min-width:300px;opacity:.26;animation-duration:155s;animation-delay:-100s}
 
   nav{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:16px 28px}
   nav .brand{display:flex;align-items:center;gap:11px}
@@ -72,7 +79,12 @@
 </style>
 </head>
 <body>
-<div class="sky"><div class="cloud c1"></div><div class="cloud c2"></div></div>
+<div class="sky"><div class="cloud c1"></div><div class="cloud c2"></div>
+  <img class="rcloud rc1" src="assets/cloud-3.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc2" src="assets/cloud-1.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc3" src="assets/cloud-4.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc4" src="assets/cloud-2.png" alt="" onerror="this.remove()"/>
+</div>
 
 <nav>
   <a class="brand" href="index.html"><img src="../brand/holdfast-logo.png" alt=""/><span class="nm">HOLDFAST</span></a>

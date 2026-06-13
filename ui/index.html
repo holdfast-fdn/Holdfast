@@ -30,6 +30,15 @@
   .cloud.c3{width:760px;height:380px;bottom:-6%;left:18%;opacity:.10;animation-duration:140s}
   .cloud.gold{background:radial-gradient(circle,#d9a845 0%,transparent 70%);opacity:.07}
   @keyframes drift{0%{transform:translateX(-40px)}50%{transform:translateX(60px)}100%{transform:translateX(-40px)}}
+  /* real drifting clouds (painted sprites, dimmed for night) */
+  .rcloud{position:absolute;pointer-events:none;mix-blend-mode:screen;opacity:.5;filter:blur(.8px);
+    will-change:transform;animation:cdrift linear infinite}
+  @keyframes cdrift{from{transform:translateX(-32vw)}to{transform:translateX(132vw)}}
+  .rc1{top:10%;width:40vw;min-width:340px;opacity:.52;animation-duration:90s;animation-delay:-12s}
+  .rc2{top:30%;width:30vw;min-width:280px;opacity:.34;animation-duration:125s;animation-delay:-66s}
+  .rc3{top:56%;width:27vw;min-width:240px;opacity:.42;animation-duration:104s;animation-delay:-34s}
+  .rc4{top:72%;width:35vw;min-width:300px;opacity:.3;animation-duration:150s;animation-delay:-96s}
+  .rc5{top:3%;width:22vw;min-width:200px;opacity:.26;animation-duration:170s;animation-delay:-130s}
   .stars{position:absolute;inset:0;opacity:.5;
     background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.5),transparent),
       radial-gradient(1px 1px at 70% 20%,rgba(255,255,255,.4),transparent),
@@ -121,6 +130,11 @@
   <div class="cloud c1"></div>
   <div class="cloud c2"></div>
   <div class="cloud c3 gold"></div>
+  <img class="rcloud rc1" src="assets/cloud-2.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc2" src="assets/cloud-3.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc3" src="assets/cloud-1.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc4" src="assets/cloud-4.png" alt="" onerror="this.remove()"/>
+  <img class="rcloud rc5" src="assets/cloud-2.png" alt="" onerror="this.remove()"/>
 </div>
 
 <nav>
