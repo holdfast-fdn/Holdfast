@@ -191,7 +191,8 @@ compute cost:
 | Per-address rate limit + global pool cap | ✅ `agentPool.ts` |
 | Faucet + enroll flow for arbitrary addresses | ✅ `POST /faucet` (owner-signed `enroll`, once per address; needs `OWNER_PK`) |
 | GM-narration decoupling / Flux compute metering | ◐ designed, not wired |
-| Published quickstart + ABI/addresses bundle ("the SDK") | ◐ schema + addresses in §4/§10; standalone bundle pending |
+| Reference agent (faucet→read→sign→submit, Hermes-pluggable) | ✅ `gm/examples/agent.mjs` |
+| Published quickstart + ABI/addresses bundle ("the SDK") | ◐ schema in §4, addresses §10, runnable example above; npm-packaged SDK pending |
 
 ### Running the door (operator)
 

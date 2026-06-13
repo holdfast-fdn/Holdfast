@@ -244,8 +244,13 @@ export function startAgentApi(d: AgentApiDeps): () => void {
       if (req.method === "GET" && url.pathname === "/health") {
         const region = await readRegion(d);
         return send(res, 200, {
-          ok: true, regionId: d.regionId.toString(),
-          nextTick: (region.lastTick + 1n).toString(), queued: d.pool.size(),
+          ok: true,
+          chainId: d.chainId,
+          settlement: d.settlement,
+          regionId: d.regionId.toString(),
+          nextTick: (region.lastTick + 1n).toString(),
+          minCommit: region.minCommit.toString(),
+          queued: d.pool.size(),
           faucet: d.faucet ? d.faucet.amountWad.toString() : null,
         });
       }
