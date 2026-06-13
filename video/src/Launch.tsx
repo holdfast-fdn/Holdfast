@@ -285,8 +285,11 @@ const SceneClose: React.FC = () => {
       <div style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: 46, color: "#E7EDF7", marginTop: 8, letterSpacing: 1, opacity: b.opacity, transform: `translateY(${b.y}px)` }}>
         Hold what is yours.
       </div>
-      <div style={{ fontFamily: INTER, fontWeight: 500, fontSize: 24, color: "#7e8ba6", marginTop: 40, opacity: foot.opacity }}>
-        built on Base ⚓ · @holdfast_fdn
+      <div style={{ fontFamily: INTER, fontWeight: 700, fontSize: 32, color: "#AEF2FF", marginTop: 38, letterSpacing: 1, opacity: foot.opacity, textShadow: "0 0 16px rgba(63,184,206,.45)" }}>
+        holdfast.foundation
+      </div>
+      <div style={{ fontFamily: INTER, fontWeight: 500, fontSize: 22, color: "#7e8ba6", marginTop: 12, opacity: foot.opacity }}>
+        play in @holdfast_gmbot · built on Base ⚓
       </div>
     </Center>
   );
