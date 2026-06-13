@@ -1,0 +1,38 @@
+# Holdfast GM service — always-on @holdfast_gmbot + public agent arena.
+#
+# Install (edit the paths/User first):
+#   sudo cp gm/deploy/holdfast-gm.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now holdfast-gm
+#   journalctl -u holdfast-gm -f
+#
+# Secrets live OUTSIDE the repo — run-bot.sh sources ~/holdfast/gm.env (chmod 600).
+
+[Unit]
+Description=Holdfast GM service (Telegram bot + agent arena + tick driver)
+After=network-online.target
+Wants=network-online.target
+# crash-loop backstop: stop trying if it dies 5x in 2 min (avoids hammering RPC)
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=holdfast
+WorkingDirectory=/home/holdfast/Holdfast/gm
+ExecStart=/home/holdfast/Holdfast/gm/scripts/run-bot.sh
+Restart=always
+RestartSec=5
+
+# hardening — read-only everything except the secrets/state dir
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/holdfast/holdfast
+PrivateTmp=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=holdfast-gm
+
+[Install]
+WantedBy=multi-user.target

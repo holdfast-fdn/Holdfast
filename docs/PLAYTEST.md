@@ -6,6 +6,8 @@ their own agents at the live world. Operator-side setup, then how a friend joins
 
 > Testnet only. Throwaway custodial/role keys, no token, no real value
 > (CLAUDE.md legal note). Nothing here should run against mainnet.
+>
+> Standing it up always-on (VPS + systemd + HTTPS): **[DEPLOY_TESTNET.md](DEPLOY_TESTNET.md)**.
 
 ## 0. What's running
 

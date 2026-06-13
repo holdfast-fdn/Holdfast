@@ -1,0 +1,13 @@
+# Fire ONE Holdfast tick by touching the trigger file the GM service watches.
+# Decoupled from the bot process: index.ts polls for this file, drains the
+# pool, settles one tick, and removes the file (a run in progress blocks
+# re-entry, so overlapping timers are safe). Paired with holdfast-tick.timer.
+
+[Unit]
+Description=Fire one Holdfast tick
+After=holdfast-gm.service
+
+[Service]
+Type=oneshot
+User=holdfast
+ExecStart=/usr/bin/touch /home/holdfast/holdfast/tick.trigger
