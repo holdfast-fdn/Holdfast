@@ -36,16 +36,39 @@ duplicate-cron idempotency.
 
 ## Run the playtest service
 
+Config lives in an env file OUTSIDE the repo (never commit the bot token
+or role keys); the launcher loads it:
+
 ```bash
-export TELEGRAM_BOT_TOKEN=...      # from @BotFather
-export ANNOUNCE_CHAT_ID=...        # the game channel
-export RPC_URL=https://sepolia.base.org
-export SETTLEMENT_ADDRESS=0x...    # from the deploy script
-export OPERATOR_PK=... PROVIDER_PK=...
-export KEYSTORE_PATH=~/holdfast/keys.json   # OUTSIDE the repo
-export STATE_DIR=~/holdfast/state
-npx tsx src/index.ts
+# ~/holdfast/gm.env  (chmod 600)
+TELEGRAM_BOT_TOKEN=...        # from @BotFather
+RPC_URL=https://sepolia.base.org
+SETTLEMENT_ADDRESS=0x...      # from docs/DEPLOYMENTS.md
+REGION_ID=0
+OPERATOR_PK=...  PROVIDER_PK=...
+KEYSTORE_PATH=/home/you/holdfast/players.json   # OUTSIDE the repo
+STATE_DIR=/home/you/holdfast/state
+FROM_BLOCK=0                  # deployment block as a getLogs floor
+ANNOUNCE_CHAT_ID=...          # game channel (only needed once ticks run)
+TICK_INTERVAL_MS=0            # 0 = listen only; 86400000 = daily ticks
 ```
+
+```bash
+gm/scripts/run-bot.sh        # sources ~/holdfast/gm.env, starts @HoldfastGM
+```
+
+`TICK_INTERVAL_MS=0` makes the bot **listen and queue orders only** — ticks
+are driven manually with `scripts/live-tick.ts` until the playtest roster
+is enrolled; flip to `86400000` for daily ticks. (`setInterval` caps near
+24.8 days, so longer cadences need a cron.)
+
+### Onboarding a player (closed playtest)
+
+1. The player messages @HoldfastGM — their custodial session wallet is
+   created on first message and stored in `KEYSTORE_PATH` under `tg:<id>`.
+2. The owner `enroll([thatAddress], 250e18)` (owner-only — the bot can't
+   self-mint). Production onboarding/self-custody is still an open item.
+3. Orders the player issues now settle against real escrow at tick close.
 
 ## Not here yet (Phase 3 remainder)
 

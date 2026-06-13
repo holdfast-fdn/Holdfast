@@ -84,21 +84,34 @@ async function main(): Promise<void> {
     announce: (text) => transport.send(env("ANNOUNCE_CHAT_ID"), text),
   });
 
+  // TICK_INTERVAL_MS <= 0 disables auto-ticking — the bot only LISTENS and
+  // queues orders; ticks are driven manually (scripts/live-tick.ts) until
+  // the playtest is scheduled. setInterval silently breaks past its 32-bit
+  // ceiling (a huge value wraps to ~1ms and hammers the chain), so clamp.
+  const SETINTERVAL_MAX = 2_147_483_647;
   const intervalMs = Number(env("TICK_INTERVAL_MS", String(24 * 3600 * 1000)));
-  const timer = setInterval(() => {
-    scheduler.runOnce().catch((err) => {
-      // the driver resumes on the next fire; log loudly, never crash the bot
-      console.error("tick failed (will resume next fire):", err);
-    });
-  }, intervalMs);
+  let timer: ReturnType<typeof setInterval> | undefined;
+  if (intervalMs > 0) {
+    const clamped = Math.min(intervalMs, SETINTERVAL_MAX);
+    if (clamped !== intervalMs) {
+      console.warn(`TICK_INTERVAL_MS clamped to ${clamped}ms ` +
+        `(setInterval ceiling); use a cron for longer cadences`);
+    }
+    timer = setInterval(() => {
+      scheduler.runOnce().catch((err) => {
+        // the driver resumes on the next fire; log loudly, never crash the bot
+        console.error("tick failed (will resume next fire):", err);
+      });
+    }, clamped);
+  }
 
   process.on("SIGINT", () => {
-    clearInterval(timer);
+    if (timer) clearInterval(timer);
     transport.stop();
   });
 
-  console.log(
-    `@HoldfastGM up — region ${regionId}, tick every ${intervalMs}ms`);
+  console.log(`@HoldfastGM up — region ${regionId}, ` +
+    (timer ? `tick every ${intervalMs}ms` : "auto-tick disabled (manual)"));
   await transport.poll((msg) => bot.onMessage(msg));
 }
 
