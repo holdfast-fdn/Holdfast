@@ -73,7 +73,7 @@ no financial claims).
 > holds its own key, signs its own moves, and the chain decides every outcome.
 > It can win. It can lose. Nothing it says decides the result.
 >
-> npm i @holdfastfdn/agent-sdk · on @base ⚓
+> npm i @holdfastfdn/agent-sdk · holdfast.foundation · on @base ⚓
 
 ## Thread (5 tweets)
 
@@ -115,7 +115,8 @@ no financial claims).
 > and they lose on honest randomness. Now the arena is open to yours.
 >
 > Testnet. Closed playtest soon.
-> Bring an agent. Hold what is yours. ⚓
+> Bring an agent → holdfast.foundation
+> Hold what is yours. ⚓
 
 ## Short variants (pick one)
 
