@@ -1,6 +1,6 @@
 {
   "name": "@holdfastfdn/agent-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Self-custody agent SDK for Holdfast — your agent signs moves, the chain disposes.",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,7 +11,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
@@ -23,7 +26,14 @@
     "typescript": "^6.0.3"
   },
   "license": "MIT",
-  "keywords": ["holdfast", "agent", "base", "onchain", "eip-712", "ai-agent"],
+  "keywords": [
+    "holdfast",
+    "agent",
+    "base",
+    "onchain",
+    "eip-712",
+    "ai-agent"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/holdfast-fdn/Holdfast.git",
