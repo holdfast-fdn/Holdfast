@@ -176,9 +176,10 @@ export class HermesFactionAgent implements FactionAgent {
       // they emit the JSON) before the deterministic fallback takes over
       const raw = await this.client.chatJson(messages, validateRawMove,
         { temperature: 0.8, maxTokens: 1800, timeoutMs: 60_000 });
-      if (raw.hold) {
-        return { tileId: -1, committed: 0, reasoning: raw.reasoning };
-      }
+      // a deliberate "hold this tick" is null — the scheduler records it as
+      // held and signs nothing (a sentinel tileId would crash EIP-712 uint64
+      // encoding and fail the whole tick).
+      if (raw.hold) return null;
       const move = sanitizeMove(raw, ctx);
       if (!move) throw new Error("Hermes proposed an illegal move");
       return move;

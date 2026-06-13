@@ -152,7 +152,9 @@ export class TickScheduler {
         } catch (err) {
           console.error(`faction ${seat.display} failed to decide:`, err);
         }
-        if (!move) {
+        // null = held; a negative/invalid tileId is treated as held too, so a
+        // single faction's bad move can never crash the whole tick for everyone.
+        if (!move || move.tileId < 0) {
           seat.memory.ticks.push({ tick: Number(tick), note: "held" });
           continue;
         }

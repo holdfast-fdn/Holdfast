@@ -70,11 +70,13 @@ describe("HermesFactionAgent", () => {
     expect(move?.committed).toBe(250);
   });
 
-  it("honors an explicit hold", async () => {
+  it("honors an explicit hold by returning null", async () => {
+    // null is the one hold convention (same as the heuristic agents); a
+    // sentinel move would crash EIP-712 uint64 encoding and fail the tick.
     const client = mockClient('{"hold":true,"reasoning":"the odds are poor; I wait"}');
     const move = await new HermesFactionAgent("Ashen Horde", client, fallback)
       .decide(ctx(250, world([[1, WILDS, 40]])));
-    expect(move?.committed).toBe(0); // sentinel hold
+    expect(move).toBeNull();
   });
 
   it("falls back to the heuristic on an illegal move (self-attack)", async () => {
