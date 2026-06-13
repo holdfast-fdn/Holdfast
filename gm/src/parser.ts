@@ -8,6 +8,7 @@
  * (run the same set against Hermes once wired).
  */
 
+import type { ChatMessage, HermesClient } from "./hermes.js";
 import type { NLIntentParser, ParsedCommand } from "./types.js";
 
 /** matches: "attack tile 5 with 120", "raid tile_03, commit 80 flux",
@@ -35,20 +36,58 @@ export class RuleBasedParser implements NLIntentParser {
 }
 
 /**
- * Hermes Agent adapter — NOT yet wired. When configured, it must:
- *  1. send the player text + a strict JSON schema to the Hermes Agent,
- *  2. validate the returned JSON against the same schema,
- *  3. fall back to RuleBasedParser on timeout/garbage (never block a tick
- *     on the LLM — Hermes reliability note in CLAUDE.md).
- * The GM may interpret; it may never invent an outcome.
+ * Hermes Agent NL->intent adapter. Sends the player's text with a strict
+ * schema, validates the returned JSON, and falls back to RuleBasedParser on
+ * timeout/garbage (never block a tick on the LLM). Hermes may INTERPRET; it
+ * can only ever produce a structured intent — the chain decides the outcome.
+ * Must pass the same acceptance set as the rule-based parser before use.
  */
 export class HermesParser implements NLIntentParser {
-  constructor(private readonly endpoint?: string) {}
+  constructor(
+    private readonly client: HermesClient,
+    private readonly fallback: NLIntentParser = new RuleBasedParser(),
+  ) {}
 
-  async parse(_text: string): Promise<ParsedCommand> {
-    throw new Error(
-      "HermesParser is not configured yet — wire the Hermes Agent endpoint " +
-        "and validate it against the parser test set before use",
-    );
+  async parse(text: string): Promise<ParsedCommand> {
+    try {
+      const messages: ChatMessage[] = [
+        {
+          role: "system",
+          content: [
+            "You translate a Holdfast player's message into a structured",
+            "order. The only action is attacking an isle by committing Flux.",
+            "Respond with ONLY a JSON object, no prose. Either:",
+            '  {"kind":"attack","tileId":<int>,"committed":<number Flux>}',
+            "or, if the message is not a clear attack order:",
+            '  {"kind":"unknown","reason":"<short reason>"}',
+            "Do not invent a tile or amount; if either is missing or unclear,",
+            "return unknown. committed must be a positive number.",
+          ].join("\n"),
+        },
+        { role: "user", content: text.slice(0, 500) },
+      ];
+      return await this.client.chatJson(messages, validateParsed,
+        { temperature: 0, maxTokens: 120 });
+    } catch (err) {
+      console.warn("Hermes parse fell back to rules:", (err as Error).message);
+      return this.fallback.parse(text);
+    }
   }
+}
+
+function validateParsed(raw: unknown): ParsedCommand {
+  if (typeof raw !== "object" || raw === null) throw new Error("not an object");
+  const r = raw as Record<string, unknown>;
+  if (r.kind === "attack") {
+    const tileId = Number(r.tileId);
+    const committed = Number(r.committed);
+    if (!Number.isInteger(tileId) || tileId < 0) throw new Error("bad tileId");
+    if (!Number.isFinite(committed) || committed <= 0) throw new Error("bad committed");
+    return { kind: "attack", tileId, committed };
+  }
+  if (r.kind === "unknown") {
+    return { kind: "unknown", reason: typeof r.reason === "string" ? r.reason
+      : "could not read an order — try: 'attack tile 5 with 120 flux'" };
+  }
+  throw new Error("unrecognized kind");
 }

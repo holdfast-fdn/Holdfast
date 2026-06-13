@@ -51,6 +51,16 @@ STATE_DIR=/home/you/holdfast/state
 FROM_BLOCK=0                  # deployment block as a getLogs floor
 ANNOUNCE_CHAT_ID=...          # game channel (only needed once ticks run)
 TICK_INTERVAL_MS=0            # 0 = listen only; 86400000 = daily ticks
+
+# --- Hermes Agent (optional) — the brain. Unset = deterministic stand-ins.
+HERMES_BASE_URL=https://inference-api.nousresearch.com/v1   # any OpenAI-compatible
+HERMES_API_KEY=...
+HERMES_MODEL=...             # a Hermes model id served by the provider
+HERMES_TIMEOUT_MS=12000
+
+# --- AI factions (the world moves while you sleep)
+#   key:Display Name:archetype  (archetype = raider|turtle|opportunist|balancer)
+FACTIONS=ashen:Ashen Horde:raider,iron:Iron Pact:turtle
 ```
 
 ```bash
@@ -70,12 +80,33 @@ is enrolled; flip to `86400000` for daily ticks. (`setInterval` caps near
    self-mint). Production onboarding/self-custody is still an open item.
 3. Orders the player issues now settle against real escrow at tick close.
 
-## Not here yet (Phase 3 remainder)
+## The Hermes harness (the brain)
 
-- Hermes Agent wiring: `HermesParser` (must pass the parser acceptance
-  set) and `HermesNarrator` (must fact-check against TickSummary). Both
-  slots exist with their guardrails documented.
+`src/hermes.ts` is an OpenAI-compatible client (works with the Nous
+inference API, OpenRouter, or a local Hermes). Set the `HERMES_*` env and
+the GM drives its three non-deterministic jobs with the LLM; unset, it runs
+on the deterministic stand-ins. Each slot has the same two guards:
+
+| Slot | Hermes does | Guard |
+|---|---|---|
+| `HermesParser` | NL → structured intent | validates the JSON; falls back to `RuleBasedParser`. Must pass the parser acceptance set before trusting. |
+| `HermesNarrator` | the Herald's voice over the facts | the exact deterministic ledger line is always appended; falls back to `TemplateNarrator`. Narration is Bucket 3 — never an outcome. |
+| `HermesFactionAgent` | choose a faction's move | the move is clamped to a legal tile + `[minCommit, escrow]`, then SIGNED as a normal intent; falls back to a `HeuristicFactionAgent`. |
+
+Two invariants hold across all three (tested in `test/hermes.test.ts`):
+**the LLM never decides an outcome** (it returns a proposal the chain
+disposes — a jailbroken Hermes can still only choose where to commit), and
+**a tick never blocks on the LLM** (timeout → deterministic fallback).
+
+To enable: add the `HERMES_*` (and optionally `FACTIONS`) env and restart
+`run-bot.sh`. The startup log says which brain is in play.
+
+## Not here yet
+
 - GM-driven Bucket-2 modifiers (reputation/terrain): plumbing exists
-  (bucket2.ts); committed empty until the GM actually shapes them.
+  (bucket2.ts); committed empty until the GM actually shapes them. The
+  faction memory structure is ready for Hermes to fill.
 - Production randomness: swap the EOA word provider for the VRF adapter
   (AUDIT.md M-2).
+- Validate `HermesParser` against the acceptance set with a live endpoint
+  before trusting it over the rules.

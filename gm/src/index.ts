@@ -22,14 +22,22 @@ import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { HoldfastBot, HttpTelegramTransport } from "./bot.js";
-import { loadArtifact, makeTickSummaryReader, ViemChainOps } from "./chain.js";
+import {
+  loadArtifact, makeEscrowReader, makeTickSummaryReader, makeWorldReader,
+  ViemChainOps,
+} from "./chain.js";
 import { TickDriver } from "./driver.js";
+import {
+  HeuristicFactionAgent, HermesFactionAgent,
+  type Archetype, type FactionMemory,
+} from "./faction.js";
+import { hermesFromEnv } from "./hermes.js";
 import { IntentPool } from "./intentPool.js";
-import { TemplateNarrator } from "./narrator.js";
-import { RuleBasedParser } from "./parser.js";
-import { TickScheduler } from "./scheduler.js";
+import { HermesNarrator, TemplateNarrator, type Narrator } from "./narrator.js";
+import { HermesParser, RuleBasedParser } from "./parser.js";
+import { TickScheduler, type FactionSeat } from "./scheduler.js";
 import { CustodialSigner } from "./signer.js";
-import type { Address } from "./types.js";
+import type { Address, NLIntentParser } from "./types.js";
 
 function env(name: string, fallback?: string): string {
   const v = process.env[name] ?? fallback;
@@ -69,7 +77,41 @@ async function main(): Promise<void> {
   const pool = new IntentPool();
   const signer = new CustodialSigner(env("KEYSTORE_PATH"));
   const transport = new HttpTelegramTransport(env("TELEGRAM_BOT_TOKEN"));
-  const bot = new HoldfastBot(transport, new RuleBasedParser(), pool, signer);
+
+  // Hermes is the brain behind the three non-deterministic jobs. When the
+  // HERMES_* env is set it drives them (each with a deterministic fallback);
+  // unset, the GM runs fully on the rule-based/template/heuristic stand-ins.
+  const hermes = hermesFromEnv();
+  console.log(hermes
+    ? "Hermes Agent connected — driving intent, narration, and factions"
+    : "Hermes not configured — running on deterministic stand-ins");
+
+  const parser: NLIntentParser = hermes
+    ? new HermesParser(hermes, new RuleBasedParser())
+    : new RuleBasedParser();
+  const narrator: Narrator = hermes
+    ? new HermesNarrator(hermes, new TemplateNarrator())
+    : new TemplateNarrator();
+  const bot = new HoldfastBot(transport, parser, pool, signer);
+
+  // AI factions (the world moves while you sleep). FACTIONS env, e.g.
+  // "ashen:Ashen Horde:raider,iron:Iron Pact:turtle". With Hermes each gets
+  // a HermesFactionAgent (heuristic fallback); without, the heuristic itself.
+  const factions: FactionSeat[] = (env("FACTIONS", "")
+    .split(",").map((s) => s.trim()).filter(Boolean)).map((spec) => {
+    const [key, display, archetype] = spec.split(":");
+    const arch = (archetype ?? "raider") as Archetype;
+    const heuristic = new HeuristicFactionAgent(arch, 0.8, display);
+    return {
+      handle: `faction:${key}`,
+      display,
+      agent: hermes ? new HermesFactionAgent(display, hermes, heuristic) : heuristic,
+      memory: { ticks: [], notes: {} } as FactionMemory,
+    };
+  });
+  if (factions.length) {
+    console.log(`factions in play: ${factions.map((f) => f.display).join(", ")}`);
+  }
 
   const scheduler = new TickScheduler({
     regionId,
@@ -81,8 +123,11 @@ async function main(): Promise<void> {
     ops,
     readSummary: makeTickSummaryReader(
       publicClient, settlement, abi, BigInt(env("FROM_BLOCK", "0"))),
-    narrator: new TemplateNarrator(),
+    narrator,
     announce: (text) => transport.send(env("ANNOUNCE_CHAT_ID"), text),
+    factions: factions.length ? factions : undefined,
+    readWorld: makeWorldReader(publicClient, settlement, abi),
+    readEscrow: makeEscrowReader(publicClient, settlement, abi),
   });
 
   // TICK_INTERVAL_MS <= 0 disables auto-ticking — the bot only LISTENS and

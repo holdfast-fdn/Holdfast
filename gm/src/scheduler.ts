@@ -157,7 +157,7 @@ export class TickScheduler {
 
     const raw = await d.readSummary(d.regionId, tick);
     const summary = this.toSummary(Number(tick), raw, names);
-    await d.announce(d.narrator.narrate(summary));
+    await d.announce(await d.narrator.narrate(summary));
     return rec;
   }
 

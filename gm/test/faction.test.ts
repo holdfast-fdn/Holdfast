@@ -75,10 +75,16 @@ describe("HeuristicFactionAgent", () => {
     expect(move?.tileId).toBe(1);
   });
 
-  it("HermesFactionAgent is a defined-but-unwired slot", async () => {
-    await expect(
-      new HermesFactionAgent("Ashen Horde").decide(ctx(ME, 100, world([[0, WILDS, 50]]))),
-    ).rejects.toThrow(/not configured yet/);
+  it("HermesFactionAgent falls back to its heuristic when the LLM fails", async () => {
+    const brokenClient = {
+      chat: async () => { throw new Error("network down"); },
+      chatJson: async () => { throw new Error("network down"); },
+    } as unknown as import("../src/hermes.js").HermesClient;
+    const fallback = new HeuristicFactionAgent("raider", 0.8);
+    const agent = new HermesFactionAgent("Ashen Horde", brokenClient, fallback);
+    const w = world([[0, ME, 100], [1, WILDS, 40]]);
+    const move = await agent.decide(ctx(ME, 250, w));
+    expect(move?.tileId).toBe(1); // heuristic backstop chose the cheap wild
   });
 });
 

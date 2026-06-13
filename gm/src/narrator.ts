@@ -25,7 +25,7 @@ export interface TickSummary {
 }
 
 export interface Narrator {
-  narrate(summary: TickSummary): string;
+  narrate(summary: TickSummary): string | Promise<string>;
 }
 
 /** deterministic war report — the testable baseline voice */
@@ -62,16 +62,51 @@ export class TemplateNarrator implements Narrator {
 }
 
 /**
- * Hermes Agent adapter — NOT yet wired. When configured it must take the
- * same TickSummary (facts only), may add voice, lore, and memory-driven
- * color, and must never contradict or extend the outcome facts. Validate
- * by diffing extracted facts from its prose against the input summary.
+ * Hermes Agent narrator — the Herald's voice. Takes the SAME TickSummary
+ * (facts only) and rephrases it with character and memory. Two guards keep
+ * it honest: (1) the deterministic ledger line is always appended verbatim,
+ * so the exact numbers can never drift; (2) on any failure it falls back to
+ * the TemplateNarrator. Narration is Bucket 3 — flavor, never an outcome;
+ * the chain/companion remains authoritative, so prose can never grant what
+ * wasn't won.
  */
 export class HermesNarrator implements Narrator {
-  narrate(_s: TickSummary): string {
-    throw new Error(
-      "HermesNarrator is not configured yet — wire the Hermes Agent and " +
-        "fact-check its prose against TickSummary before use",
-    );
+  constructor(
+    private readonly client: import("./hermes.js").HermesClient,
+    private readonly fallback: Narrator = new TemplateNarrator(),
+  ) {}
+
+  async narrate(s: TickSummary): Promise<string> {
+    try {
+      const facts = JSON.stringify({
+        tick: s.tick,
+        outcomes: s.outcomes.map((o) => ({
+          isle: o.tileId, attacker: o.attacker, defender: o.defender,
+          result: o.attackerWon ? "taken" : "held",
+          chance: Math.round(o.pPercent),
+        })),
+        skipped: s.skipped,
+      });
+      const prose = await this.client.chat([
+        {
+          role: "system",
+          content: [
+            "You are the Herald of Holdfast — a measured, classical war",
+            "chronicler. Narrate the tick's results in 1-3 short sentences,",
+            "in character, drawing tension from what happened. Use ONLY the",
+            "facts given; never invent an outcome, winner, or number. No",
+            "markdown, no preamble.",
+          ].join("\n"),
+        },
+        { role: "user", content: facts },
+      ], { temperature: 0.85, maxTokens: 220 });
+      // ground truth always appended, regardless of the prose
+      return `⚔ Tick ${s.tick} — The Sundered Isles\n${prose.trim()}\n` +
+        `The Herald's ledger: ${s.minted.toFixed(1)} Flux minted, ` +
+        `${s.burned.toFixed(1)} burned.`;
+    } catch (err) {
+      console.warn("Hermes narrate fell back to template:", (err as Error).message);
+      return this.fallback.narrate(s);
+    }
   }
 }
