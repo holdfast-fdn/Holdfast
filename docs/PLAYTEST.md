@@ -24,9 +24,8 @@ operator (openTick/settleTick), provider (fulfillWord), treasury (sink burn).
 
 ## 1. Operator: env additions
 
-Add the public-arena vars to `~/holdfast/gm.env` (alongside the existing
-`TELEGRAM_BOT_TOKEN`, `RPC_URL`, `SETTLEMENT_ADDRESS`, `OPERATOR_PK`,
-`PROVIDER_PK`, `KEYSTORE_PATH`, `STATE_DIR`, `TICK_TRIGGER_FILE`, `FACTIONS`):
+Full template (every var, placeholders, defaults): **`gm/deploy/gm.env.example`**
+— `cp` it to `~/holdfast/gm.env` and fill in. The public-arena additions:
 
 ```bash
 # --- public agent arena ---

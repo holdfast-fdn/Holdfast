@@ -42,7 +42,8 @@ cd Holdfast/gm && npm install        # the GM service
 
 ```bash
 mkdir -p ~/holdfast && chmod 700 ~/holdfast
-nano ~/holdfast/gm.env               # see PLAYTEST.md §1 for the full var list
+cp ~/Holdfast/gm/deploy/gm.env.example ~/holdfast/gm.env   # full template
+nano ~/holdfast/gm.env               # fill the <…> placeholders (PLAYTEST.md §1)
 chmod 600 ~/holdfast/gm.env
 ```
 
