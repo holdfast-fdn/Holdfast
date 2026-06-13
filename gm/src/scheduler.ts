@@ -11,6 +11,7 @@
  * because the driver resumes and the pool drains atomically.
  */
 
+import type { AgentIntentPool } from "./agentPool.js";
 import { bucket2Root, type Bucket2State } from "./bucket2.js";
 import type { ChainOps, TickDriver, TickRecord } from "./driver.js";
 import type { FactionAgent, FactionMemory, WorldView } from "./faction.js";
@@ -62,6 +63,9 @@ export interface SchedulerDeps {
   chainId: number;
   settlement: Address;
   pool: IntentPool;
+  /** optional pool of pre-signed moves from external self-custody agents
+   *  (docs/AGENT_PROTOCOL.md) — merged into the same batch, never re-signed */
+  agentPool?: AgentIntentPool;
   signer: CustodialSigner;
   driver: TickDriver;
   ops: ChainOps;
@@ -103,6 +107,22 @@ export class TickScheduler {
       );
       names.set(contest.attacker.toLowerCase(), o.display);
       contests.push(contest);
+    }
+
+    // External agents (public arena): their moves arrive ALREADY EIP-712
+    // -signed by their own keys. We merge them as-is — the service never holds
+    // their keys, so it cannot forge. An intent signed for a tick that has
+    // since closed is dropped (the on-chain signature check would reject it).
+    if (d.agentPool) {
+      for (const e of d.agentPool.drain()) {
+        if (e.tick !== tick) {
+          console.warn(
+            `dropping stale agent intent: signed tick ${e.tick}, settling ${tick}`);
+          continue;
+        }
+        names.set(e.contest.attacker.toLowerCase(), e.display);
+        contests.push(e.contest);
+      }
     }
 
     // The world moves while you sleep: each AI faction issues a signed

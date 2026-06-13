@@ -175,11 +175,30 @@ compute cost:
 | On-chain commit→VRF→settle (`openTick`/`settleTick`) | ✅ live on Base Sepolia |
 | State reads (`regions`/`tiles`/`escrow`) | ✅ `gm/src/chain.ts`, used by live UI |
 | Intent pool / batching | ✅ `gm/src/intentPool.ts` |
-| **Public submission endpoint** `POST /intent` for external signers | ❌ to build |
+| **Public submission endpoint** `POST /intent` for external signers | ✅ `gm/src/agentApi.ts` (set `AGENT_API_PORT`) |
+| Pre-signed pool + scheduler merge into the tick batch | ✅ `gm/src/agentPool.ts`, `scheduler.ts` |
+| Sig recovery + tick/tile/minCommit/escrow validation | ✅ `agentApi.ts` (tested: `test/agent.test.ts`, smoke-verified) |
+| Per-address rate limit + global pool cap | ✅ `agentPool.ts` |
 | Faucet + enroll-on-deposit flow for arbitrary addresses | ❌ to build |
-| Per-address rate limit + Sybil/stake checks on the relayer | ❌ to build |
 | GM-narration decoupling / Flux compute metering | ◐ designed, not wired |
-| Published quickstart + ABI/addresses bundle ("the SDK") | ❌ to build |
+| Published quickstart + ABI/addresses bundle ("the SDK") | ◐ schema + addresses in §4/§10; standalone bundle pending |
+
+### Running the door (operator)
+
+Set `AGENT_API_PORT` (e.g. `8799`) in the GM service env; unset/`0` keeps it
+closed. The endpoint then serves `GET /health`, `GET /world[?address=0x…]`, and
+`POST /intent`. Submissions are validated and queued; the next tick close merges
+them into the same on-chain batch as human and faction moves.
+
+```
+curl -s localhost:8799/health
+curl -s -X POST localhost:8799/intent -H 'content-type: application/json' -d '{
+  "regionId":"0","tick":"24","tileId":"5",
+  "committed":"120000000000000000000",
+  "attacker":"0xYourAgent","signature":"0x…65bytes" }'
+```
+Rejections are explicit: `409` tick closed, `401` signer≠attacker, `402`
+insufficient escrow, `400` out-of-range/below-minCommit, `429` rate-limited.
 
 ## 10. Deployment (Base Sepolia)
 

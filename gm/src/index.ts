@@ -12,6 +12,7 @@
  *   KEYSTORE_PATH        custodial player keys (outside the repo!)
  *   STATE_DIR            tick state + published bundles
  *   TICK_INTERVAL_MS     tick close interval (default: daily)
+ *   AGENT_API_PORT       public agent API port (0/unset = closed)
  *
  * Run: npx tsx src/index.ts
  */
@@ -21,6 +22,8 @@ import { existsSync, rmSync } from "node:fs";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
+import { startAgentApi } from "./agentApi.js";
+import { AgentIntentPool } from "./agentPool.js";
 import { HoldfastBot, HttpTelegramTransport } from "./bot.js";
 import {
   loadArtifact, makeEscrowReader, makeTickSummaryReader, makeWorldReader,
@@ -113,11 +116,35 @@ async function main(): Promise<void> {
     console.log(`factions in play: ${factions.map((f) => f.display).join(", ")}`);
   }
 
+  const readWorld = makeWorldReader(publicClient, settlement, abi);
+
+  // Public agent arena (docs/AGENT_PROTOCOL.md): when AGENT_API_PORT is set,
+  // any self-custody agent can POST a signed move. The pool holds those
+  // pre-signed contests; the scheduler merges them into the same batch.
+  // Unset, the door is simply closed — nothing else changes.
+  const agentApiPort = Number(env("AGENT_API_PORT", "0"));
+  const agentPool = agentApiPort > 0 ? new AgentIntentPool() : undefined;
+  let stopAgentApi: (() => void) | undefined;
+  if (agentPool) {
+    stopAgentApi = startAgentApi({
+      port: agentApiPort,
+      regionId,
+      chainId: baseSepolia.id,
+      settlement,
+      abi,
+      publicClient,
+      pool: agentPool,
+      readWorld,
+    });
+    console.log(`agent API listening on :${agentApiPort} (POST /intent)`);
+  }
+
   const scheduler = new TickScheduler({
     regionId,
     chainId: baseSepolia.id,
     settlement,
     pool,
+    agentPool,
     signer,
     driver: new TickDriver(ops, wordProvider, env("STATE_DIR", "./state")),
     ops,
@@ -126,7 +153,7 @@ async function main(): Promise<void> {
     narrator,
     announce: (text) => transport.send(env("ANNOUNCE_CHAT_ID"), text),
     factions: factions.length ? factions : undefined,
-    readWorld: makeWorldReader(publicClient, settlement, abi),
+    readWorld,
     readEscrow: makeEscrowReader(publicClient, settlement, abi),
   });
 
@@ -176,6 +203,7 @@ async function main(): Promise<void> {
 
   process.on("SIGINT", () => {
     if (timer) clearInterval(timer);
+    stopAgentApi?.();
     transport.stop();
   });
 
