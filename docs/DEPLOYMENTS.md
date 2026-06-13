@@ -73,6 +73,18 @@ The full loop ran with a human in the loop, end to end through the live
 
 This is the Phase-3/4 exit criterion demonstrated on the public testnet.
 
+## First autonomous AI faction move — 2026-06-13 (the core vision)
+
+"The world moves while you sleep" on a public chain. The Ashen Horde — a
+heuristic raider standing in for Hermes (`gm/scripts/faction-tick.ts`) —
+read the live world, chose isle 0, signed an intent from its OWN wallet
+(`0x14C8…56AE`, enrolled 250 Flux), and settled tick 3
+([tx](https://sepolia.basescan.org/tx/0x75121f0ab9acdd17403e5475eb8b31035461ea0f15b16f73f96485f842a8c3f1)).
+Honest VRF: chance 58.0%, rolled 52.6% → **the Horde took isle 0 from the
+wilds** (garrison now 212 = its commit). The faction is just another wallet
+issuing signed intents — its intelligence chose the move, the chain decided
+the outcome. Wiring Hermes replaces only the `decide()` brain.
+
 ## Operational checklist (to start the playtest)
 
 1. `enroll([players], 250e18)` as owner once the roster is known.

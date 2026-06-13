@@ -44,7 +44,8 @@ Reproduce the resolver on-chain. Highest-audit-surface artifact — write at aud
 Wire narrative + intent atop proven mechanics.
 - [ ] NL → structured intent skill (validate translation accuracy on a test set).
 - [ ] Narrative layer (Bucket 3): GM narrates outcomes the resolver already decided; never asserts an outcome the chain didn't produce.
-- [ ] Memory wiring: cross-session relationships/lore in GM memory; outcome-affecting modifiers promoted to Bucket 2.
+- [x] AI faction agents (the GM-as-player core): `gm/src/faction.ts` — FactionAgent seat with full world view + persistent memory; HeuristicFactionAgent stand-in (sim archetypes) + HermesFactionAgent slot; scheduler folds faction moves into the tick batch as signed intents. Demonstrated autonomously on Base Sepolia (the Ashen Horde took an isle on honest VRF). Wiring Hermes replaces only decide().
+- [ ] Memory wiring: cross-session relationships/lore in GM memory; outcome-affecting modifiers promoted to Bucket 2 (faction memory structure exists; Hermes fills it).
 - [ ] Cron tick driver with completion checks + retries (Hermes cron is unreliable — never trust a single fire).
 - [ ] Trusted-but-verifiable publishing of all tick inputs.
 

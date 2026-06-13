@@ -13,6 +13,7 @@
 
 import { bucket2Root, type Bucket2State } from "./bucket2.js";
 import type { ChainOps, TickDriver, TickRecord } from "./driver.js";
+import type { FactionAgent, FactionMemory, WorldView } from "./faction.js";
 import type { IntentPool } from "./intentPool.js";
 import type { Narrator, SettledOutcome, TickSummary } from "./narrator.js";
 import { WAD, type CustodialSigner } from "./signer.js";
@@ -48,6 +49,14 @@ const SKIP_REASONS = [
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
+/** an autonomous faction seat at the table (Hermes, or a heuristic stand-in) */
+export interface FactionSeat {
+  handle: string;      // custodial keystore handle, e.g. "faction:ashen"
+  display: string;     // "Ashen Horde"
+  agent: FactionAgent;
+  memory: FactionMemory;
+}
+
 export interface SchedulerDeps {
   regionId: bigint;
   chainId: number;
@@ -60,6 +69,11 @@ export interface SchedulerDeps {
   narrator: Narrator;
   /** where the war report goes (the game channel) */
   announce: (text: string) => Promise<void>;
+  /** optional AI factions that move every tick (the world moves while you
+   *  sleep). Needs readWorld + readEscrow to give each agent its view. */
+  factions?: FactionSeat[];
+  readWorld?: (regionId: bigint) => Promise<WorldView>;
+  readEscrow?: (addr: Address) => Promise<number>;
 }
 
 export class TickScheduler {
@@ -89,6 +103,44 @@ export class TickScheduler {
       );
       names.set(contest.attacker.toLowerCase(), o.display);
       contests.push(contest);
+    }
+
+    // The world moves while you sleep: each AI faction issues a signed
+    // intent from its own wallet, exactly like a human. Its move is chosen
+    // by intelligence (Hermes, or a heuristic); its OUTCOME is the chain's.
+    if (d.factions?.length && d.readWorld && d.readEscrow) {
+      const world = await d.readWorld(d.regionId);
+      for (const seat of d.factions) {
+        const address = d.signer.wallet(seat.handle).address as Address;
+        const escrow = await d.readEscrow(address);
+        let move = null;
+        try {
+          move = await seat.agent.decide({
+            faction: { handle: seat.handle, display: seat.display, address, escrow },
+            world,
+            memory: seat.memory,
+          });
+        } catch (err) {
+          console.error(`faction ${seat.display} failed to decide:`, err);
+        }
+        if (!move) {
+          seat.memory.ticks.push({ tick: Number(tick), note: "held" });
+          continue;
+        }
+        const contest = await d.signer.signContest(
+          seat.handle, d.chainId, d.settlement,
+          {
+            regionId: d.regionId, tick, tileId: BigInt(move.tileId),
+            committed: (BigInt(Math.round(move.committed * 10)) * WAD) / 10n,
+          },
+        );
+        names.set(address.toLowerCase(), seat.display);
+        contests.push(contest);
+        seat.memory.ticks.push({
+          tick: Number(tick),
+          note: move.reasoning ?? `committed ${move.committed} on isle ${move.tileId}`,
+        });
+      }
     }
 
     // Bucket-2 commitment. v1: no GM-driven modifiers exist yet, so the

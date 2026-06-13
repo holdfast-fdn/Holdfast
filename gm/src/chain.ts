@@ -14,6 +14,7 @@ import type {
   Transport,
 } from "viem";
 import type { ChainOps } from "./driver.js";
+import type { WorldView } from "./faction.js";
 import type { RawTickSummary, TickSummaryReader } from "./scheduler.js";
 import type { Address, SignedContest } from "./types.js";
 
@@ -107,6 +108,63 @@ export class ViemChainOps implements ChainOps {
     // regions(id) -> (tileCount, lastTick, exists, params)
     return region[1] as bigint;
   }
+}
+
+const WAD_F = 1e18;
+
+/** Build the WorldView a faction agent reasons over — all tiles + the
+ *  resolver params, read straight from the settlement contract. */
+export function makeWorldReader(
+  publicClient: Pick<PublicClient, "readContract">,
+  settlement: Address,
+  abi: Abi,
+): (regionId: bigint) => Promise<WorldView> {
+  return async (regionId) => {
+    const region = (await publicClient.readContract({
+      address: settlement, abi, functionName: "regions", args: [regionId],
+    })) as readonly [bigint, bigint, boolean, {
+      delta: bigint; gamma: bigint; beta: bigint; yieldPerTile: bigint;
+      garrisonRegen: bigint; garrisonCap: bigint; minCommit: bigint;
+    }];
+    const tileCount = Number(region[0]);
+    const params = region[3];
+    const tiles = [];
+    for (let i = 0; i < tileCount; i++) {
+      const t = (await publicClient.readContract({
+        address: settlement, abi, functionName: "tiles", args: [regionId, BigInt(i)],
+      })) as readonly [Address, bigint, bigint];
+      const owner = t[0];
+      tiles.push({
+        tileId: i,
+        owner,
+        ownerIsWilds: /^0x0+$/.test(owner),
+        garrison: Number(t[1]) / WAD_F,
+        mod: Number(t[2]) / WAD_F,
+      });
+    }
+    return {
+      regionId,
+      tick: region[1] + 1n,
+      tiles,
+      alpha: 0.5, // fixed in v1 (ResolverLib)
+      delta: Number(params.delta) / WAD_F,
+      minCommit: Number(params.minCommit) / WAD_F,
+    };
+  };
+}
+
+/** read a player/faction escrow as whole Flux */
+export function makeEscrowReader(
+  publicClient: Pick<PublicClient, "readContract">,
+  settlement: Address,
+  abi: Abi,
+): (addr: Address) => Promise<number> {
+  return async (addr) => {
+    const e = (await publicClient.readContract({
+      address: settlement, abi, functionName: "escrow", args: [addr],
+    })) as bigint;
+    return Number(e) / WAD_F;
+  };
 }
 
 /** read a settled tick's outcomes back from chain events — what the

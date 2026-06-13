@@ -86,6 +86,16 @@ attacker wins iff r < p
 - α>1: concentration → whales dominate single tiles.
 No α removes capital influence entirely. Playtest start: α=0.5–0.7; tune from real data.
 
+## Hermes as a PLAYER — the AI factions (the core vision)
+
+"How does Hermes play the game" has two senses: Hermes as GM (translator + narrator — `HermesParser`/`HermesNarrator` slots) and **Hermes as a player** (the AI factions that contest tiles while humans sleep). The second is the distinctive one.
+
+- **Mechanism:** a faction plays by issuing a **signed intent from its own wallet**, exactly like a human — commits real Flux, can lose. Intelligence (which tile, how much, persona, grudges) is the non-deterministic GM part; the OUTCOME is the resolver + VRF. Hermes can lose to a human.
+- **Why it's safe AND novel:** the trust machinery already built (EIP-712 signed intents + commit-then-randomness + provider separation) is exactly what lets the SAME agent be narrator/operator AND player without cheating — it can never make the chain rule in its favor, only choose where to commit. No other on-chain game makes an LLM a genuine economic actor (non-deterministic moves, deterministic outcomes). This is the unfilled intersection.
+- **The seat:** `gm/src/faction.ts` — `FactionAgent.decide(ctx)` where ctx carries the full world view PLUS persistent memory (past ticks, player behavior) so a Hermes implementation can reason richly. `HeuristicFactionAgent` (ports the sim archetypes, deterministic, testable) is the stand-in; `HermesFactionAgent` is the defined-but-unwired slot. The scheduler folds faction moves into the tick batch alongside human orders.
+- **Proven on Base Sepolia (2026-06-13):** the Ashen Horde (heuristic raider as the Hermes stand-in) autonomously read the live world, signed a move from its own wallet, and took isle 0 from the wilds on honest VRF (58% chance, rolled 52.6%) — "the world moves while you sleep," on a public chain. See `docs/DEPLOYMENTS.md`.
+- **What Hermes adds over the heuristic:** memory of every player's behavior, adaptation, per-faction personality, narrative reasoning. The interface already passes the memory; wiring Hermes replaces only the `decide()` brain.
+
 ## What is proven (empirically, in the sim)
 
 `sim/resolver.py`: even fight 100v100 → 43.5%; ~676 Flux (≈7×) for 2:1 dominance; whale-split trade-off confirmed at α=0.5; reproducibility (identical inputs→outputs); Monte Carlo (20k) win-rate matches theoretical p (VRF unbiased); one tick = one settlement; burn accounting works.
