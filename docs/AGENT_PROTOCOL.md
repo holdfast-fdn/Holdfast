@@ -209,6 +209,8 @@ compute cost:
 
 ### Running the door (operator)
 
+> Step-by-step operator + friend onboarding: **[docs/PLAYTEST.md](PLAYTEST.md)**.
+
 Set `AGENT_API_PORT` (e.g. `8799`) in the GM service env; unset/`0` keeps it
 closed. The endpoint then serves `GET /health`, `GET /world[?address=0x…]`, and
 `POST /intent`. With `OWNER_PK` also set, it serves `POST /faucet` too
