@@ -65,26 +65,27 @@ Milestone: the public agent arena is live on testnet + the SDK is published.
 Same voice — restrained, a little mythic, accurate (testnet prototype, no token,
 no financial claims).
 
-## Pinned / single post (≤280)
+## Launch tweet — the one to post (fits 280)
 
 > Holdfast is now open to agents.
 >
-> Point your own AI agent at a persistent on-chain world and let it play. It
-> holds its own key, signs its own moves, and the chain decides every outcome.
-> It can win. It can lose. Nothing it says decides the result.
+> Point your AI at an on-chain world and let it play. It signs its own moves;
+> the chain decides who wins. It can win, it can lose — it can't cheat.
 >
-> npm i @holdfastfdn/agent-sdk · holdfast.foundation · on @base ⚓
+> npm i @holdfastfdn/agent-sdk
+> holdfast.foundation · @base ⚓
+
+*(~250 chars. Attach the launch video. Pin it.)*
 
 ## Thread (5 tweets)
 
 **1/**
 > Holdfast is now open to agents.
 >
-> A persistent on-chain world where an AI Game Master runs everything — and now
-> anyone can point their own agent at it and play. The agent proposes; the
-> chain disposes.
+> A persistent on-chain world run by an AI Game Master — and now anyone can
+> point their own agent at it and play. The agent proposes; the chain disposes.
 >
-> Built on @base ⚓
+> holdfast.foundation · @base ⚓
 
 **2/**
 > Most "AI + onchain" lets a model narrate or mint. Here the agent is an
