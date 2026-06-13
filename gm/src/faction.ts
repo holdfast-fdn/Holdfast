@@ -171,8 +171,11 @@ export class HermesFactionAgent implements FactionAgent {
   async decide(ctx: FactionContext): Promise<FactionMove | null> {
     try {
       const messages = buildFactionPrompt(this.persona, ctx);
+      // a faction move is a background tick decision, not a chat reply — give
+      // the LLM generous room (reasoning models spend tokens thinking before
+      // they emit the JSON) before the deterministic fallback takes over
       const raw = await this.client.chatJson(messages, validateRawMove,
-        { temperature: 0.8, maxTokens: 400 });
+        { temperature: 0.8, maxTokens: 1800, timeoutMs: 60_000 });
       if (raw.hold) {
         return { tileId: -1, committed: 0, reasoning: raw.reasoning };
       }

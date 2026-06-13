@@ -21,6 +21,9 @@ export interface HermesConfig {
   apiKey: string;
   model: string;       // e.g. a Hermes model id served by the provider
   timeoutMs: number;
+  /** retries on a transient failure / empty completion before giving up to
+   *  the caller's deterministic fallback (free models can be flaky) */
+  maxRetries: number;
 }
 
 export interface ChatMessage {
@@ -32,15 +35,33 @@ export interface ChatOpts {
   temperature?: number;
   maxTokens?: number;
   json?: boolean;      // request strict JSON output
+  /** per-call timeout override — chat replies want it short, background
+   *  faction reasoning can afford longer; defaults to the config value */
+  timeoutMs?: number;
 }
 
 export class HermesClient {
   constructor(private readonly cfg: HermesConfig) {}
 
-  /** raw completion -> assistant text */
+  /** raw completion -> assistant text, with retries on transient failure */
   async chat(messages: ChatMessage[], opts: ChatOpts = {}): Promise<string> {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= this.cfg.maxRetries; attempt++) {
+      try {
+        return await this.attempt(messages, opts);
+      } catch (err) {
+        lastErr = err;
+        if (attempt < this.cfg.maxRetries) {
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        }
+      }
+    }
+    throw lastErr;
+  }
+
+  private async attempt(messages: ChatMessage[], opts: ChatOpts): Promise<string> {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), this.cfg.timeoutMs);
+    const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? this.cfg.timeoutMs);
     try {
       const body: Record<string, unknown> = {
         model: this.cfg.model,
@@ -110,5 +131,6 @@ export function hermesFromEnv(
     apiKey,
     model,
     timeoutMs: Number(env.HERMES_TIMEOUT_MS ?? "12000"),
+    maxRetries: Number(env.HERMES_MAX_RETRIES ?? "2"),
   });
 }

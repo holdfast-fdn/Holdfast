@@ -20,7 +20,10 @@ import {
   ViemChainOps,
 } from "../src/chain.js";
 import { TickDriver } from "../src/driver.js";
-import { HeuristicFactionAgent, type Archetype } from "../src/faction.js";
+import {
+  HermesFactionAgent, HeuristicFactionAgent, type Archetype, type FactionAgent,
+} from "../src/faction.js";
+import { hermesFromEnv } from "../src/hermes.js";
 import { IntentPool } from "../src/intentPool.js";
 import { TemplateNarrator } from "../src/narrator.js";
 import { TickScheduler } from "../src/scheduler.js";
@@ -39,6 +42,18 @@ function env(): Record<string, string> {
     if (m) out[m[1]] = m[2].trim();
   }
   return out;
+}
+
+/** Hermes brain when HERMES_* is set (heuristic fallback), else heuristic */
+function factionAgent(archetype: Archetype): FactionAgent {
+  const heuristic = new HeuristicFactionAgent(archetype, 0.85, FACTION.display);
+  const hermes = hermesFromEnv();
+  if (hermes) {
+    console.log(`${FACTION.display} thinks with Hermes (heuristic fallback)`);
+    return new HermesFactionAgent(FACTION.display, hermes, heuristic);
+  }
+  console.log(`${FACTION.display} thinks with the heuristic (${archetype})`);
+  return heuristic;
 }
 
 async function main() {
@@ -84,7 +99,7 @@ async function main() {
     },
     factions: [{
       ...FACTION,
-      agent: new HeuristicFactionAgent(archetype, 0.85, FACTION.display),
+      agent: factionAgent(archetype),
       memory: { ticks: [], notes: {} },
     }],
     readWorld: makeWorldReader(pub, SETTLEMENT, abi),

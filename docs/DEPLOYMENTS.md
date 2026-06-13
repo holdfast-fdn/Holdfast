@@ -85,6 +85,29 @@ wilds** (garrison now 212 = its commit). The faction is just another wallet
 issuing signed intents — its intelligence chose the move, the chain decided
 the outcome. Wiring Hermes replaces only the `decide()` brain.
 
+## Hermes drives a faction live — 2026-06-13 (the brain, on chain)
+
+Wired the Hermes harness to the Nous inference API (OpenAI-compatible) and
+exercised all three slots against a live LLM (`gm/scripts/hermes-smoke.ts`),
+then drove a faction tick on Base Sepolia with Hermes as the brain:
+
+- **Parser** beat the regex — read "I want to take the seventh isle, send
+  60" as `{attack, tile 7, 60}` (the rule-based parser can't).
+- **Faction** reasoned with intent: *"target a weakly garrisoned wild isle
+  over the rival's fortress; 100 Flux balances win probability with
+  preserving war chest for defense."* It chose isle 1 and took it on honest
+  VRF (46.9% chance, rolled 45.9% — barely)
+  ([tx](https://sepolia.basescan.org/tx/0x48a256ca84b9d0bf7f1bd3bd0c077770ec35eaa06b7a035c4eb4adfb0dea2f93)).
+  The Ashen Horde now holds isles 0 and 1 against the human on isle 5.
+- **Narrator** spoke as the Herald, grounded in the facts, ledger appended.
+
+Model note: the account had no credits for the requested
+`~anthropic/claude-opus-latest`, so the demo used a free model
+(`nvidia/nemotron-3-ultra:free`) — a slow reasoning model that needed a
+larger token budget and a client retry. Add credits at
+portal.nousresearch.com and set `HERMES_MODEL=~anthropic/claude-opus-latest`
+for a faster, sharper brain; no code change.
+
 ## Operational checklist (to start the playtest)
 
 1. `enroll([players], 250e18)` as owner once the roster is known.
