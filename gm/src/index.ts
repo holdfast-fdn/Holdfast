@@ -128,7 +128,15 @@ async function main(): Promise<void> {
     `${webBase}/holdfast-isles?region=${regionId}` +
     `&rpc=${encodeURIComponent(rpc)}&settlement=${settlement}` +
     (address ? `&me=${address}` : "");
-  const bot = new HoldfastBot(transport, parser, pool, signer, { mapUrl });
+  // chain readers so the Herald can show real Flux balances + a win-odds
+  // preview when a player orders (a deterministic PREVIEW, never an outcome).
+  const botWorld = makeWorldReader(publicClient, settlement, abi);
+  const botEscrow = makeEscrowReader(publicClient, settlement, abi);
+  const bot = new HoldfastBot(transport, parser, pool, signer, {
+    mapUrl,
+    readWorld: () => botWorld(regionId),
+    readEscrow: (a) => botEscrow(a as Address),
+  });
   // register the "/" command menu so humans see the commands (best-effort)
   await transport.setCommands(BOT_COMMANDS);
 

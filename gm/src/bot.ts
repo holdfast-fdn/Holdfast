@@ -13,8 +13,9 @@
  * still disposed by the chain.
  */
 
-import type { NLIntentParser } from "./types.js";
+import type { AttackIntent, NLIntentParser } from "./types.js";
 import type { IntentPool } from "./intentPool.js";
+import type { WorldView } from "./faction.js";
 
 export interface IncomingMessage {
   chatId: number | string;
@@ -58,32 +59,48 @@ export interface WalletResolver {
 export interface BotOpts {
   /** builds the live-map URL, optionally centred on the player's address */
   mapUrl?: (address?: string) => string;
+  /** read the live world (tiles + params) — enables Flux balance + win-odds
+   *  preview. The Herald only PREVIEWS the deterministic chance; it never
+   *  decides the outcome. */
+  readWorld?: () => Promise<WorldView>;
+  /** read a player's committable Flux (escrow), whole tokens */
+  readEscrow?: (address: string) => Promise<number>;
 }
 
 const HELP = [
-  "I am the Herald. Speak your orders and I carry them to the isles.",
+  "I am the Herald. Speak an order and I carry it to the isles.",
   "",
-  "Examples:",
+  "⚔️ Orders — commit Flux to attack an isle (by its number):",
   "  attack tile 5 with 120 flux",
-  "  raid tile_03, commit 80",
+  "  raid tile 3 with 80",
+  "  take tile 7 using 60",
+  "When you order, I tell you your chance to take it.",
   "",
-  "/play   — how to play, step by step",
-  "/orders — what you have queued for the next tick",
-  "/wallet — your on-chain identity in the isles",
-  "/map    — open the live map of the isles",
-  "/help   — this message",
+  "/play   — the goal, Flux & how odds work",
+  "/wallet — your Flux balance & isles held",
+  "/orders — what you have queued",
+  "/map    — live map: owners, garrisons, tile numbers",
   "",
   "Orders lock at tick close. The chain decides; I only carry the word.",
 ].join("\n");
 
 const HOWTO = [
-  "⚔️ How to play, in three breaths:",
+  "⚔️ How to play Holdfast",
   "",
-  "1. Claim your seal — tap 🔑 My Wallet. The Herald grants your starting Flux.",
-  "2. Speak an order in plain words, e.g.:",
+  "🎯 GOAL: take isles and hold them. Every isle you hold yields Flux to you",
+  "   each tick — the more ground you hold, the richer you grow.",
+  "",
+  "💰 FLUX is your war chest. Commit it to attack an isle:",
   "     attack tile 5 with 120 flux",
-  "3. At tick close your order is signed, the world resolves on-chain, and I",
-  "   return with news. Watch it live on 🗺️ the map.",
+  "   • Win  → you take the isle + a share of its garrison.",
+  "   • Lose → most of your committed Flux burns (some goes to the defender).",
+  "   Tap 🔑 My Wallet anytime to see your Flux.",
+  "",
+  "🎲 ODDS: a bigger commit vs the isle's garrison = a better chance — but",
+  "   defenders have the edge, so matching the garrison isn't quite a coin",
+  "   flip. When you place an order, I show you the exact chance.",
+  "",
+  "🗺️ Isles are NUMBERED. Open the map to see tile numbers, owners & garrisons.",
   "",
   "The chain decides every outcome — not me, not anyone. I only carry the word.",
 ].join("\n");
@@ -92,7 +109,7 @@ const HOWTO = [
 export const BOT_COMMANDS: Array<{ command: string; description: string }> = [
   { command: "start", description: "Open the Herald's menu" },
   { command: "play", description: "How to play, step by step" },
-  { command: "wallet", description: "Your on-chain identity & Flux" },
+  { command: "wallet", description: "Your Flux balance & isles held" },
   { command: "orders", description: "Orders queued for the next tick" },
   { command: "map", description: "Open the live map of the isles" },
   { command: "help", description: "What the Herald understands" },
@@ -100,6 +117,8 @@ export const BOT_COMMANDS: Array<{ command: string; description: string }> = [
 
 export class HoldfastBot {
   private readonly mapUrl?: (address?: string) => string;
+  private readonly readWorld?: () => Promise<WorldView>;
+  private readonly readEscrow?: (address: string) => Promise<number>;
 
   constructor(
     private readonly transport: TelegramTransport,
@@ -110,6 +129,8 @@ export class HoldfastBot {
     opts: BotOpts = {},
   ) {
     this.mapUrl = opts.mapUrl;
+    this.readWorld = opts.readWorld;
+    this.readEscrow = opts.readEscrow;
   }
 
   /** the main menu keyboard, personalised with the player's map link */
@@ -181,11 +202,36 @@ export class HoldfastBot {
     this.pool.add({ handle, display, intent: parsed });
     await this.transport.send(
       msg.chatId,
-      `Order taken: attack tile ${parsed.tileId} with ` +
-        `${parsed.committed} Flux. It locks at tick close — ` +
-        `the chain will decide.`,
+      await this.orderConfirmation(parsed),
       { buttons: [[{ text: "📜 My Orders", data: "orders" }, ...(this.mapUrl ? [{ text: "🗺️ Live Map", url: this.mapUrl(this.addrFor(handle)) }] : [])]] },
     );
+  }
+
+  /** Order receipt + a PREVIEW of the deterministic win chance. The Herald
+   *  only shows the math (committed vs garrison); the chain still decides. */
+  private async orderConfirmation(o: AttackIntent): Promise<string> {
+    const base = `⚔️ Order taken: attack tile ${o.tileId} with ${o.committed} Flux.`;
+    const tail = "\nIt locks at tick close — the chain decides.";
+    if (!this.readWorld) return base + tail;
+    try {
+      const world = await this.readWorld();
+      const tile = world.tiles.find((t) => t.tileId === o.tileId);
+      if (!tile) return `${base}\n⚠ There is no tile ${o.tileId} in this region (isles are ${`0–${world.tiles.length - 1}`}).`;
+      if (o.committed < world.minCommit)
+        return `${base}\n⚠ Below the minimum of ${world.minCommit} Flux — this order would be skipped. Commit more.`;
+      // p = committed^α / (committed^α + garrison^α · δ)  — defenders get δ.
+      const pa = Math.pow(o.committed, world.alpha);
+      const pd = Math.pow(Math.max(tile.garrison, 0.0001), world.alpha) * world.delta;
+      const pct = Math.round((pa / (pa + pd)) * 100);
+      const held = tile.ownerIsWilds ? "the wilds" : `${tile.owner.slice(0, 6)}…`;
+      return (
+        `${base}\n\n🎲 ~${pct}% to take it.\n` +
+        `Isle ${o.tileId} is held by ${held} with ${tile.garrison.toFixed(0)} Flux garrison ` +
+        `(defenders have the edge). Commit more to raise your odds.${tail}`
+      );
+    } catch {
+      return base + tail;
+    }
   }
 
   /** dispatch a tapped inline button */
@@ -216,7 +262,7 @@ export class HoldfastBot {
     return this.transport.send(chatId, HOWTO, { buttons: this.menu(handle) });
   }
 
-  private sendWallet(chatId: number | string, handle: string): Promise<void> {
+  private async sendWallet(chatId: number | string, handle: string): Promise<void> {
     if (!this.signer) {
       return this.transport.send(
         chatId,
@@ -225,11 +271,21 @@ export class HoldfastBot {
       );
     }
     const addr = this.signer.wallet(handle).address;
+    let balance = "";
+    if (this.readEscrow && this.readWorld) {
+      try {
+        const [flux, world] = await Promise.all([this.readEscrow(addr), this.readWorld()]);
+        const isles = world.tiles.filter((t) => t.owner.toLowerCase() === addr.toLowerCase()).length;
+        balance = `\n\n💰 ${flux.toFixed(1)} Flux  ·  🏴 ${isles} isle${isles === 1 ? "" : "s"} held`;
+      } catch {
+        balance = "\n\n(couldn't read your balance from the chain just now)";
+      }
+    }
     return this.transport.send(
       chatId,
-      "Your standard flies under this seal in the isles:\n" +
-        addr +
-        "\n\nThe Herald grants your starting Flux to it before the world opens.",
+      `🔑 Your seal in the isles:\n${addr}${balance}\n\n` +
+        "Flux is your war chest — commit it to take isles. Win and you gain " +
+        "more; lose and most of it burns.",
       { buttons: this.menu(handle) },
     );
   }

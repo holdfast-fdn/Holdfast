@@ -44,7 +44,30 @@ describe("HoldfastBot", () => {
     expect(pool.list("tg:42")[0].intent).toEqual({
       kind: "attack", tileId: 5, committed: 120,
     });
-    expect(transport.last()).toContain("the chain will decide");
+    expect(transport.last()).toContain("Order taken: attack tile 5 with 120");
+    expect(transport.last()).toContain("the chain decides");
+  });
+
+  it("previews the win chance when a world reader is wired", async () => {
+    const world = {
+      regionId: 0n, tick: 1, alpha: 0.5, delta: 1.3, minCommit: 20,
+      tiles: [{ tileId: 5, owner: "0x0000000000000000000000000000000000000000", ownerIsWilds: true, garrison: 60, mod: 1 }],
+    };
+    const wbot = new HoldfastBot(transport, new RuleBasedParser(), pool, undefined, {
+      readWorld: async () => world as never,
+    });
+    await wbot.onMessage(msg("attack tile 5 with 120 flux"));
+    // p = √120 / (√120 + 1.3·√60) ≈ 52%
+    expect(transport.last()).toMatch(/~5\d% to take it/);
+    expect(transport.last()).toContain("60 Flux garrison");
+  });
+
+  it("warns when the commit is below minCommit", async () => {
+    const world = { regionId: 0n, tick: 1, alpha: 0.5, delta: 1.3, minCommit: 20,
+      tiles: [{ tileId: 5, owner: "0x0", ownerIsWilds: true, garrison: 60, mod: 1 }] };
+    const wbot = new HoldfastBot(transport, new RuleBasedParser(), pool, undefined, { readWorld: async () => world as never });
+    await wbot.onMessage(msg("attack tile 5 with 10 flux"));
+    expect(transport.last()).toContain("Below the minimum");
   });
 
   it("a newer order for the same tile replaces the older one", async () => {
