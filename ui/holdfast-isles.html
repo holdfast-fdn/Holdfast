@@ -20,7 +20,8 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{font-family:var(--sans);color:var(--bone);background:#1f74b8;overflow:hidden}
+  body{font-family:var(--sans);color:var(--bone);overflow:hidden;
+    background:radial-gradient(95% 95% at 50% 36%,#5BBCF2 0%,#379FE0 50%,#1B6FB4 100%) #1B6FB4}
   .stage{position:relative;width:100%;height:100vh;overflow:hidden}
   svg.world{position:absolute;inset:0;width:100%;height:100%}
   .vig{position:absolute;inset:0;pointer-events:none;
@@ -151,10 +152,13 @@
       <filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
       <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
-    <rect x="-500" y="-500" width="1900" height="1560" fill="url(#sea)"/>
+    <!-- static full-bleed sea/sky backdrop — NOT in #viewport, so zoom/pan
+         never reveals a seam; it always covers the whole stage -->
+    <rect x="-1000" y="-900" width="2900" height="2360" fill="url(#sea)"/>
+    <g id="seaimg"></g>
+    <g id="caustics"></g>
+    <!-- only the world (islands + dressing) zooms & pans -->
     <g id="viewport">
-      <g id="seaimg"></g>
-      <g id="caustics"></g>
       <g id="stones"></g>
       <g id="clouds"></g>
       <g id="islands"></g>
@@ -338,7 +342,8 @@ async function preloadAssets(){
 function drawSea(){
   const g=document.getElementById('seaimg');g.innerHTML='';
   if(!skyOk)return;
-  const im=el('image',{width:900,height:560,preserveAspectRatio:'xMidYMid slice'});
+  // full-bleed so the painted sky covers the stage at any zoom (no seam)
+  const im=el('image',{x:-1000,y:-900,width:2900,height:2360,preserveAspectRatio:'xMidYMid slice'});
   im.setAttribute('href',SKY_ART);g.appendChild(im);
 }
 function drawCaustics(){
