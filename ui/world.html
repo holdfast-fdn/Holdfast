@@ -168,12 +168,12 @@ const REGIONS=[
 ];
 const box=document.getElementById('regions');
 REGIONS.forEach(r=>{
-  const a=document.createElement(r.live?'a':'a');
+  const a=document.createElement('a');
   a.className='region'+(r.live?'':' locked');
-  a.href=r.href;
+  if(r.live)a.href=r.href;   // non-live regions aren't clickable (no demo)
   a.innerHTML=
     '<div class="rart">'+
-      '<span class="badge '+(r.live?'live':'soon')+'">'+(r.live?'Live · on-chain':'Charted')+'</span>'+
+      '<span class="badge '+(r.live?'live':'soon')+'">'+(r.live?'Live · on-chain':'Coming soon')+'</span>'+
       '<img src="'+r.art+'" alt="" onerror="this.style.display=\'none\'"/>'+
       '<div class="haze"></div>'+
     '</div>'+
@@ -181,7 +181,7 @@ REGIONS.forEach(r=>{
       '<div class="rn">'+r.name+'</div><div class="rt">'+r.theme+'</div>'+
       '<div class="rd">'+r.desc+'</div>'+
       '<div class="rstat"><span>Isles <b>'+r.isles+'</b></span><span>Powers <b>'+r.powers+'</b></span></div>'+
-      '<div class="enter '+(r.live?'go':'go')+'">'+(r.live?'⚔ Enter the war':'🧭 Explore the map')+'</div>'+
+      '<div class="enter '+(r.live?'go':'go')+'">'+(r.live?'⚔ Enter the war':'🔒 Coming soon')+'</div>'+
     '</div>';
   box.appendChild(a);
 });
