@@ -105,6 +105,17 @@
   @keyframes tileflash{0%{filter:brightness(1)}22%{filter:brightness(1.5) drop-shadow(0 0 16px var(--gold))}100%{filter:brightness(1)}}
   .flash{animation:tileflash 1.9s ease-out}
   .panel{transition:opacity .35s}
+  /* zoom controls */
+  .zoomctl{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:8px}
+  .zbtn{width:42px;height:42px;font-size:24px;font-weight:700;line-height:1;color:var(--bone);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(16,24,38,.92),rgba(9,16,28,.94));backdrop-filter:blur(8px);
+    border:1px solid #2c3c50;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+    transition:filter .15s,border-color .15s;-webkit-tap-highlight-color:transparent;user-select:none}
+  .zbtn:hover{filter:brightness(1.25);border-color:var(--gold)}
+  .zbtn:active{filter:brightness(.9)}
+  .zbtn.fit{font-size:18px;color:var(--gold)}
+  @media(max-width:760px){.zoomctl{left:10px;gap:7px}.zbtn{width:46px;height:46px}}
   /* mobile */
   @media(max-width:760px){
     .crest svg{width:36px;height:36px}.crest .nm{font-size:16px}.crest .sb{font-size:8px;letter-spacing:2px}
@@ -118,7 +129,7 @@
 </head>
 <body>
 <div class="stage" id="stage">
-  <svg class="world" id="world" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <svg class="world" id="world" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet" style="touch-action:none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <radialGradient id="sea" cx="50%" cy="36%" r="90%">
         <stop offset="0" stop-color="#5BBCF2"/><stop offset="50%" stop-color="#379FE0"/><stop offset="100%" stop-color="#1B6FB4"/>
@@ -140,17 +151,19 @@
       <filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
       <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
-    <rect width="900" height="560" fill="url(#sea)"/>
-    <g id="seaimg"></g>
-    <g id="caustics"></g>
-    <g id="stones"></g>
-    <g id="clouds"></g>
-    <g id="islands"></g>
-    <g id="airship"></g>
+    <rect x="-500" y="-500" width="1900" height="1560" fill="url(#sea)"/>
+    <g id="viewport">
+      <g id="seaimg"></g>
+      <g id="caustics"></g>
+      <g id="stones"></g>
+      <g id="clouds"></g>
+      <g id="islands"></g>
+      <g id="airship"></g>
+    </g>
   </svg>
   <div class="vig"></div>
 
-  <a class="crest" href="world.html" title="Back to the world">
+  <a class="crest" href="world" title="Back to the world">
     <img class="logo" src="holdfast-logo.png" alt="Holdfast"/>
     <div><div class="nm">HOLDFAST</div><div class="sb" id="regionName">‹ THE SUNDERED ISLES</div></div>
   </a>
@@ -167,6 +180,11 @@
     <div class="spin"></div>
     <div class="lt" id="loadt">THE SUNDERED ISLES</div>
     <div class="ls" id="loads">reading the world from chain…</div>
+  </div>
+  <div class="zoomctl" id="zoomctl">
+    <button class="zbtn" id="zin" aria-label="Zoom in">+</button>
+    <button class="zbtn" id="zout" aria-label="Zoom out">−</button>
+    <button class="zbtn fit" id="zfit" aria-label="Fit to screen">⤢</button>
   </div>
 </div>
 
@@ -659,6 +677,84 @@ preloadAssets().then(async()=>{
   hideLoading();
   if(live){setInterval(()=>refreshLive(false),15000);setInterval(tickAge,1000);}
 });
+</script>
+
+<script>
+/* ============ map zoom & pan (mouse wheel · pinch · drag · buttons) ============
+   Transforms the #viewport group so the HUD stays put. Default view uses
+   preserveAspectRatio "meet" so the whole map is visible (no mobile cutoff);
+   users zoom in for detail. A drag is distinguished from a tap so island
+   selection still works. */
+(function(){
+  const svg=document.getElementById('world');
+  const vp=document.getElementById('viewport');
+  if(!svg||!vp)return;
+  const MINK=0.6, MAXK=6, VBW=900, VBH=560, MARGIN=200;
+  let k=1, tx=0, ty=0;
+
+  function clamp(){
+    k=Math.min(MAXK,Math.max(MINK,k));
+    tx=Math.min(VBW-MARGIN,Math.max(MARGIN-VBW*k,tx));
+    ty=Math.min(VBH-MARGIN,Math.max(MARGIN-VBH*k,ty));
+  }
+  function apply(){clamp();vp.setAttribute('transform','translate('+tx+' '+ty+') scale('+k+')');}
+  function toVB(cx,cy){
+    const ctm=svg.getScreenCTM();if(!ctm)return null;
+    const p=svg.createSVGPoint();p.x=cx;p.y=cy;
+    const q=p.matrixTransform(ctm.inverse());return {x:q.x,y:q.y};
+  }
+  function zoomAt(vx,vy,f){
+    const k0=k;k=Math.min(MAXK,Math.max(MINK,k*f));
+    tx=vx-(k/k0)*(vx-tx);ty=vy-(k/k0)*(vy-ty);apply();
+  }
+  function zoomCenter(f){
+    const r=svg.getBoundingClientRect();const v=toVB(r.left+r.width/2,r.top+r.height/2);
+    if(v)zoomAt(v.x,v.y,f);
+  }
+  document.getElementById('zin').onclick =()=>zoomCenter(1.35);
+  document.getElementById('zout').onclick=()=>zoomCenter(1/1.35);
+  document.getElementById('zfit').onclick=()=>{tx=0;ty=0;k=1;apply();};
+
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();const v=toVB(e.clientX,e.clientY);
+    if(v)zoomAt(v.x,v.y,e.deltaY<0?1.15:1/1.15);
+  },{passive:false});
+
+  // pointer-based pan + pinch (mouse, touch, pen unified)
+  const pts=new Map();
+  let downC=null,lastPan=null,lastDist=0,lastMid=null,moved=false,didPan=false;
+  svg.addEventListener('pointerdown',e=>{
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    svg.setPointerCapture(e.pointerId);
+    if(pts.size===1){downC={x:e.clientX,y:e.clientY};lastPan=toVB(e.clientX,e.clientY);moved=false;}
+    else{lastDist=0;lastMid=null;}
+  });
+  svg.addEventListener('pointermove',e=>{
+    if(!pts.has(e.pointerId))return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const arr=[...pts.values()];
+    if(arr.length>=2){
+      const dx=arr[0].x-arr[1].x,dy=arr[0].y-arr[1].y;
+      const dist=Math.hypot(dx,dy),mid={x:(arr[0].x+arr[1].x)/2,y:(arr[0].y+arr[1].y)/2};
+      if(lastMid){const a=toVB(mid.x,mid.y),b=toVB(lastMid.x,lastMid.y);if(a&&b){tx+=a.x-b.x;ty+=a.y-b.y;apply();}}
+      if(lastDist){const v=toVB(mid.x,mid.y);if(v)zoomAt(v.x,v.y,dist/lastDist);}
+      lastDist=dist;lastMid=mid;moved=true;didPan=true;
+    }else if(arr.length===1&&lastPan){
+      const v=toVB(e.clientX,e.clientY);if(!v)return;
+      tx+=v.x-lastPan.x;ty+=v.y-lastPan.y;lastPan=v;apply();
+      if(downC&&Math.hypot(e.clientX-downC.x,e.clientY-downC.y)>6){moved=true;didPan=true;}
+    }
+  });
+  function up(e){
+    pts.delete(e.pointerId);
+    if(pts.size<2){lastDist=0;lastMid=null;}
+    if(pts.size===0){lastPan=null;if(moved){didPan=true;setTimeout(()=>{didPan=false;},60);}}
+  }
+  svg.addEventListener('pointerup',up);
+  svg.addEventListener('pointercancel',up);
+  // a drag must not select an island
+  svg.addEventListener('click',e=>{if(didPan){e.stopPropagation();e.preventDefault();didPan=false;}},true);
+})();
 </script>
 </body>
 </html>

@@ -125,7 +125,7 @@ async function main(): Promise<void> {
   // on the player's own holdings. WEB_BASE points at the deployed frontend.
   const webBase = env("WEB_BASE", "https://holdfast.foundation").replace(/\/$/, "");
   const mapUrl = (address?: string): string =>
-    `${webBase}/holdfast-isles.html?region=${regionId}` +
+    `${webBase}/holdfast-isles?region=${regionId}` +
     `&rpc=${encodeURIComponent(rpc)}&settlement=${settlement}` +
     (address ? `&me=${address}` : "");
   const bot = new HoldfastBot(transport, parser, pool, signer, { mapUrl });

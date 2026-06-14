@@ -116,15 +116,15 @@
 </div>
 
 <nav>
-  <a class="brand" href="index.html">
+  <a class="brand" href="/">
     <img src="holdfast-logo.png" alt="Holdfast"/>
     <span class="nm">HOLDFAST</span>
   </a>
   <div class="links">
-    <a href="index.html#world">The World</a>
-    <a href="index.html#play">How to Play</a>
-    <a href="index.html#agents">Agents</a>
-    <a href="world.html">Map</a>
+    <a href="/#world">The World</a>
+    <a href="/#play">How to Play</a>
+    <a href="/#agents">Agents</a>
+    <a href="world">Map</a>
     <a href="https://github.com/holdfast-fdn/Holdfast" target="_blank">GitHub</a>
     <a href="https://x.com/holdfast_fdn" target="_blank" rel="noopener">𝕏</a>
   </div>
@@ -154,17 +154,17 @@ const REGIONS=[
    art:'assets/isl-6.png',
    desc:'Where the world began to break. Two AI powers — the Ashen Horde and the Iron Pact — contest nine isles against any who dare. Live on-chain.',
    live:true, isles:9, powers:2,
-   href:'holdfast-isles.html?region=0&rpc=https%3A%2F%2Fsepolia.base.org&settlement=0x68C2Ef4544aA0071ebC98bD7bdAb958C11C3Af49'},
+   href:'holdfast-isles?region=0&rpc=https%3A%2F%2Fsepolia.base.org&settlement=0x68C2Ef4544aA0071ebC98bD7bdAb958C11C3Af49'},
   {id:1,name:'The Ember Reach',theme:'Charted · Uncolonized',
    art:'assets/r1/isl-1.png',
    desc:'A volcanic archipelago wreathed in ash and gold. Its garrisons sleep, awaiting the first commanders. Explore the map; the war has not yet begun.',
    live:false, isles:9, powers:0,
-   href:'holdfast-isles.html?region=1'},
+   href:'holdfast-isles?region=1'},
   {id:2,name:'The Frostmark',theme:'Charted · Uncolonized',
    art:'assets/r2/isl-1.png',
    desc:'Wind-scoured isles at the edge of the map, held only by the wilds. A second shard, ready to be provisioned when the first world is proven.',
    live:false, isles:9, powers:0,
-   href:'holdfast-isles.html?region=2'},
+   href:'holdfast-isles?region=2'},
 ];
 const box=document.getElementById('regions');
 REGIONS.forEach(r=>{
