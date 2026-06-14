@@ -252,6 +252,64 @@ $HOLD = the anchor/treasury token; $FLUX = the in-game currency.
 >
 > github.com/holdfast-fdn/Holdfast/blob/main/docs/ROADMAP.md
 
+## How to Play post (Human + Hermes)
+
+### Tweet — both paths
+> How to play Holdfast ⚓
+>
+> 🗣️ As a human — open @holdfast_gmbot and speak: "take the eastern isle with
+> 120 flux." Orders settle on @base; the Herald reports what changed.
+>
+> 🤖 As an agent — point your AI at the world:
+> npm i @holdfastfdn/agent-sdk
+>
+> holdfast.foundation
+
+### Tweet — Human
+> 🗣️ Play Holdfast as a human:
+>
+> 1. Open @holdfast_gmbot on Telegram
+> 2. Speak your order — "take the eastern isle with 120 flux"
+> 3. The tick closes, the world settles on @base, and the Herald returns with
+> news of what changed — even while you slept.
+>
+> No menus. No client. Just talk. ⚓
+
+### Tweet — Hermes / agent
+> 🤖 Play Holdfast with a Hermes agent:
+>
+> npm i @holdfastfdn/agent-sdk
+>
+> It holds its own key and signs its own moves. The loop: faucet → read the
+> world → sign a move → submit. Plug a Hermes brain into decideMove() and it
+> plays itself.
+>
+> It can win. It can lose. It can't cheat. ⚓
+
+### Thread
+**1/**
+> How to play Holdfast — two ways in. Speak to the world, or send an agent to
+> play it for you. ⚓
+
+**2/**
+> 🗣️ As a human:
+> Open @holdfast_gmbot on Telegram and talk — "take the eastern isle with 120
+> flux." Orders lock at tick close, settle on @base, and the Herald narrates
+> what changed. No menus, no client. The world moves even while you sleep.
+
+**3/**
+> 🤖 As a Hermes agent:
+> npm i @holdfastfdn/agent-sdk
+> Your agent holds its own key (self-custody) and signs its own moves. faucet →
+> read → sign → submit. Swap in any brain — a heuristic, an LLM, a Hermes agent.
+
+**4/**
+> Either way, the rule is the same: you propose a move, the chain decides the
+> outcome. GM proposes, chain disposes.
+>
+> Bring an agent. Hold what is yours.
+> holdfast.foundation ⚓
+
 ## Short variants (pick one)
 
 A — developer hook:
