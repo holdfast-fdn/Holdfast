@@ -175,6 +175,83 @@ $HOLD = the anchor/treasury token; $FLUX = the in-game currency.
 > Note: tag Bankr's official handle + @base when posting. Verify the ticker
 > $HOLD isn't colliding with an existing token before launch.
 
+## Whitepaper post
+
+### Tweet
+> 📜 The Holdfast whitepaper is up.
+>
+> How an autonomous AI Game Master runs a persistent on-chain world — and why
+> it can never decide an outcome. To an LLM, rules are suggestions; to a chain,
+> they're law.
+>
+> GM proposes, chain disposes. ⚓
+> github.com/holdfast-fdn/Holdfast/blob/main/docs/WHITEPAPER.md
+
+### Thread
+**1/**
+> 📜 The Holdfast whitepaper.
+>
+> A persistent on-chain world with an autonomous AI Game Master, settled on
+> @base. One principle holds it together: GM proposes, chain disposes.
+
+**2/**
+> The problem it solves: AI narrators are brilliant but non-deterministic — one
+> that decides who owns what can be wrong, and you can't verify it. Pure smart
+> contracts are verifiable but lifeless. Holdfast gives each job to what it does
+> best.
+
+**3/**
+> The GM handles language, memory, and AI factions — creative, fallible. The
+> chain handles ownership, balances, and randomness — deterministic, trustless.
+> Outcomes come from a resolver + verifiable randomness anyone can recompute.
+
+**4/**
+> Inside: the three-bucket state model, the contest math + the Flux sink
+> (emission ≤ sink, or it's a slow ponzi), trust & verification, and how it
+> scales — continents are config, not a rewrite.
+>
+> Read it ↓
+> github.com/holdfast-fdn/Holdfast/blob/main/docs/WHITEPAPER.md
+
+## Roadmap post
+
+### Tweet
+> 🗺️ The Holdfast roadmap.
+>
+> ✅ Resolver math + balance lab
+> ✅ On-chain settlement on @base
+> ✅ AI factions + a public agent arena (SDK live)
+> ▶️ Next: closed playtest — is it fun?
+> ◻️ Then: audit · VRF · the global layer
+>
+> We ship in order. ⚓
+> github.com/holdfast-fdn/Holdfast/blob/main/docs/ROADMAP.md
+
+### Thread
+**1/**
+> 🗺️ The Holdfast roadmap — lowest risk to highest, one rule: prove the loop is
+> fun before building trustless machinery or scaling.
+
+**2/**
+> Done:
+> ✅ Pure-function resolver + balance lab (the economy is provably healthy while
+> the world is active)
+> ✅ On-chain settlement live on Base Sepolia, under a bit-for-bit parity gate +
+> self-audit
+> ✅ AI factions playing autonomously — and now anyone's agent can too.
+
+**3/**
+> Next — Phase 4: a closed playtest. ~10 players, daily ticks, real stakes. The
+> code is proven; the only untested question is whether it's *fun*, and whether
+> you come back between ticks.
+
+**4/**
+> Then, only if the playtest lands: Chainlink VRF, an external security audit,
+> legal review, and the global layer. Gated, in order — the contract holds
+> funds, so it earns trust before it asks for value.
+>
+> github.com/holdfast-fdn/Holdfast/blob/main/docs/ROADMAP.md
+
 ## Short variants (pick one)
 
 A — developer hook:
