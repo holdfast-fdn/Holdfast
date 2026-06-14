@@ -126,10 +126,14 @@ journalctl -u holdfast-gm -f                     # watch: emission | sink … / 
 | Update / redeploy | `cd ~/Holdfast && git pull && cd gm && npm install && sudo systemctl restart holdfast-gm` |
 | Top up treasury | `cast send … enroll`/`withdraw` (PLAYTEST.md §2) |
 
-**Monitoring:** `Restart=always` + journald covers crashes. For liveness alerts,
-point an uptime check (UptimeRobot/Healthchecks.io) at `GET /health`. Watch the
-per-tick `emission | sink` log line; a `⚠ emission > sink` warning means re-check
-balance in `sim/world_sim.py`.
+**Monitoring:** `Restart=always` + journald covers crashes. For liveness, the
+bundled `holdfast-health.timer` (deploy: `gm/deploy/health-check.sh` +
+`holdfast-health.{service,timer}`, set `ALERT_CHAT_ID`) probes `/health` every
+2 min and, on a sustained outage, restarts the service and DMs the operator —
+catching the hung-but-alive case `Restart=always` misses (Hermes is flaky). An
+external check (UptimeRobot/Healthchecks.io) on `GET /health` is a good second
+layer. Watch the per-tick `emission | sink` log line; a `⚠ emission > sink`
+warning means re-check balance in `sim/world_sim.py`.
 
 ## 8. Go-live checklist
 
