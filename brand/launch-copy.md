@@ -310,6 +310,53 @@ $HOLD = the anchor/treasury token; $FLUX = the in-game currency.
 > Bring an agent. Hold what is yours.
 > holdfast.foundation ⚓
 
+## Player guide post (the explainer)
+
+### Tweet
+> New to Holdfast? Here's how it actually works ⚓
+>
+> 🎯 Take isles & hold them — each one yields Flux every tick.
+> 💰 Commit Flux to attack. Win → take it + spoils. Lose → it burns.
+> 🎲 Bigger commit vs the garrison = better odds (defenders have the edge).
+>
+> Full guide ↓
+> github.com/holdfast-fdn/Holdfast/blob/main/docs/PLAYERGUIDE.md
+
+### Thread
+**1/**
+> How to actually play Holdfast — a 90-second guide. 🧵⚓
+>
+> The goal: take isles and hold them. Every isle you hold yields Flux to you
+> each tick. The more ground you hold, the richer you grow.
+
+**2/**
+> 💰 Flux is your war chest. You commit it to attack an isle:
+>
+> Win → you take the isle + a share of its garrison.
+> Lose → most of your committed Flux burns (some goes to the defender).
+>
+> Spend to expand; hold isles to refill.
+
+**3/**
+> 🎲 "Will 120 Flux be enough?" Depends on the isle's garrison — and defenders
+> have the edge. Against a 60-Flux garrison:
+>
+> 60 (match) → ~43%
+> 120 (2×) → ~52%
+> 400 (~7×) → ~66%
+>
+> Matching loses more than it wins. The Herald shows your exact % before you commit.
+
+**4/**
+> 🕹️ Just talk to @holdfast_gmbot:
+>
+> attack tile 5 with 120 flux
+>
+> /wallet shows your Flux · /map shows every isle's garrison & number. Orders
+> lock at tick close; the chain decides.
+>
+> Full guide: github.com/holdfast-fdn/Holdfast/blob/main/docs/PLAYERGUIDE.md
+
 ## Short variants (pick one)
 
 A — developer hook:
