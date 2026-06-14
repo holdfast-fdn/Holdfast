@@ -6,13 +6,13 @@ import {
 import { loadFont as loadCinzel } from "@remotion/google-fonts/Cinzel";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 
-const { fontFamily: CINZEL } = loadCinzel();
-const { fontFamily: INTER } = loadInter();
+export const CINZEL = loadCinzel().fontFamily;
+export const INTER = loadInter().fontFamily;
 
-const NYX = "#0B0E15";
-const CYAN = "#3FB8CE";
+export const NYX = "#0B0E15";
+export const CYAN = "#3FB8CE";
 
-const GOLD_TEXT: React.CSSProperties = {
+export const GOLD_TEXT: React.CSSProperties = {
   fontFamily: CINZEL,
   fontWeight: 700,
   backgroundImage: "linear-gradient(180deg,#FFF6C8 0%,#FFDA2E 52%,#C7891F 100%)",
@@ -24,7 +24,7 @@ const GOLD_TEXT: React.CSSProperties = {
 };
 
 // ---- realistic stormy floating-isles background ----
-const wave = (frame: number, per: number, amp: number, ph: number) =>
+export const wave = (frame: number, per: number, amp: number, ph: number) =>
   amp * Math.sin((2 * Math.PI * frame) / per + ph);
 
 // island layers: depth 1 = foreground (bright, big, fast bob), <1 = far (dim, blurred, slow)
@@ -123,7 +123,7 @@ const Ocean: React.FC = () => {
   );
 };
 
-const Background: React.FC = () => {
+export const Background: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: "linear-gradient(180deg, #1b2838 0%, #21323f 32%, #1b3038 54%, #122730 100%)" }}>
       <AbsoluteFill style={{ background: "radial-gradient(78% 38% at 50% 58%, rgba(150,200,205,.15), transparent 70%)" }} />
@@ -139,7 +139,7 @@ const Background: React.FC = () => {
 };
 
 // ---- helpers ----
-const useReveal = (delay = 0, dur = 18) => {
+export const useReveal = (delay = 0, dur = 18) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const s = spring({ frame: frame - delay, fps, config: { damping: 200 } });
@@ -147,7 +147,7 @@ const useReveal = (delay = 0, dur = 18) => {
   return { opacity, y: interpolate(s, [0, 1], [26, 0]) };
 };
 
-const Center: React.FC<{ children: React.ReactNode; scrim?: number }> = ({ children, scrim = 0.6 }) => (
+export const Center: React.FC<{ children: React.ReactNode; scrim?: number }> = ({ children, scrim = 0.6 }) => (
   <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center", padding: 80 }}>
     <div style={{
       position: "absolute", width: 940, height: 560, borderRadius: "50%",

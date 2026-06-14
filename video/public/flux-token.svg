@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- FLUX — token icon "The Winged Drachma".
+       Coin form for wallets/exchanges; feather bars match the primary mark. -->
+  <defs>
+    <g id="tw">
+      <polygon points="96,106 40,84  50,102 96,128"/>
+      <polygon points="96,136 52,118 60,136 96,158"/>
+    </g>
+  </defs>
+
+  <circle cx="128" cy="128" r="120" fill="#11161F"/>
+  <circle cx="128" cy="128" r="120" fill="none" stroke="#D9A845" stroke-width="10"/>
+  <circle cx="128" cy="128" r="98" fill="none" stroke="#D9A845" stroke-width="3" opacity="0.45"/>
+
+  <!-- herald wings -->
+  <g fill="#D9A845">
+    <use href="#tw"/>
+    <use href="#tw" transform="translate(256 0) scale(-1 1)"/>
+  </g>
+
+  <!-- flux spark -->
+  <polygon points="128,78 178,128 128,178 78,128" fill="#11161F"/>
+  <polygon points="128,86 170,128 128,170 86,128" fill="#3FB8CE"/>
+  <polygon points="128,108 148,128 128,148 108,128" fill="#11161F" opacity="0.35"/>
+</svg>
