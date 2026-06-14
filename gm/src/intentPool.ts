@@ -7,6 +7,7 @@
  * the scheduler signs and submits the drained snapshot.
  */
 
+import { readFileSync, writeFileSync } from "node:fs";
 import type { AttackIntent } from "./types.js";
 
 export interface PooledIntent {
@@ -18,8 +19,32 @@ export interface PooledIntent {
 export class IntentPool {
   private orders = new Map<string, PooledIntent>();
 
+  /** @param persistPath optional file mirroring the pool, so a restart never
+   *  drops queued orders. Orders carry no tick — they're signed for whatever
+   *  tick is next at drain — so reloading them stays correct. */
+  constructor(private readonly persistPath?: string) {
+    if (persistPath) {
+      try {
+        const raw = JSON.parse(readFileSync(persistPath, "utf8")) as PooledIntent[];
+        for (const e of raw) this.orders.set(`${e.handle}:${e.intent.tileId}`, e);
+      } catch {
+        /* no/corrupt snapshot — start empty */
+      }
+    }
+  }
+
+  private save(): void {
+    if (!this.persistPath) return;
+    try {
+      writeFileSync(this.persistPath, JSON.stringify([...this.orders.values()]));
+    } catch {
+      /* best-effort; never block an order on disk */
+    }
+  }
+
   add(entry: PooledIntent): void {
     this.orders.set(`${entry.handle}:${entry.intent.tileId}`, entry);
+    this.save();
   }
 
   /** the player's currently queued orders */
@@ -35,6 +60,7 @@ export class IntentPool {
   drain(): PooledIntent[] {
     const all = [...this.orders.values()];
     this.orders.clear();
+    this.save();
     return all;
   }
 }

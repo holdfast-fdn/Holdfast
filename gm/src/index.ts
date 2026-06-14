@@ -24,6 +24,7 @@
 
 import { randomBytes } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
@@ -83,7 +84,9 @@ async function main(): Promise<void> {
   const wordProvider = async (): Promise<bigint> =>
     BigInt(`0x${randomBytes(32).toString("hex")}`);
 
-  const pool = new IntentPool();
+  const stateDir = env("STATE_DIR", "./state");
+  // persist the order pool so a restart never drops queued orders
+  const pool = new IntentPool(join(stateDir, "pool.json"));
   const signer = new CustodialSigner(env("KEYSTORE_PATH"));
   const transport = new HttpTelegramTransport(env("TELEGRAM_BOT_TOKEN"));
 
@@ -132,10 +135,28 @@ async function main(): Promise<void> {
   // preview when a player orders (a deterministic PREVIEW, never an outcome).
   const botWorld = makeWorldReader(publicClient, settlement, abi);
   const botEscrow = makeEscrowReader(publicClient, settlement, abi);
+  // Testnet auto-faucet: grant a new player their starting escrow on /start or
+  // /wallet (owner enroll mints it). Guarded by an on-chain escrow check so it
+  // never double-funds; the bot processes messages sequentially (no races).
+  const ownerPk = process.env.OWNER_PK;
+  const faucetWad =
+    (BigInt(Math.round(Number(env("FAUCET_FLUX", "200")) * 10)) * WAD) / 10n;
+  const autoEnroll = ownerPk
+    ? async (address: string): Promise<void> => {
+        if ((await botEscrow(address as Address)) > 0) return; // already funded
+        const hash = await wallet(ownerPk).writeContract({
+          address: settlement, abi, functionName: "enroll",
+          args: [[address as Address], faucetWad],
+        });
+        await publicClient.waitForTransactionReceipt({ hash });
+        console.log(`[enroll] auto-funded ${address} (${env("FAUCET_FLUX", "200")} Flux)`);
+      }
+    : undefined;
   const bot = new HoldfastBot(transport, parser, pool, signer, {
     mapUrl,
     readWorld: () => botWorld(regionId),
     readEscrow: (a) => botEscrow(a as Address),
+    autoEnroll,
   });
   // register the "/" command menu so humans see the commands (best-effort)
   await transport.setCommands(BOT_COMMANDS);
@@ -172,11 +193,9 @@ async function main(): Promise<void> {
     // Testnet faucet: with OWNER_PK set, the door can enroll a fresh agent
     // address with starting escrow (owner-only enroll mints the backing Flux).
     // No OWNER_PK -> POST /faucet is closed; agents must be enrolled out-of-band.
-    const ownerPk = process.env.OWNER_PK;
     const faucet = ownerPk
       ? {
-          amountWad:
-            (BigInt(Math.round(Number(env("FAUCET_FLUX", "200")) * 10)) * WAD) / 10n,
+          amountWad: faucetWad,
           enroll: async (addr: Address, amountWad: bigint): Promise<string> => {
             const hash = await wallet(ownerPk).writeContract({
               address: settlement, abi, functionName: "enroll",
@@ -209,7 +228,7 @@ async function main(): Promise<void> {
     pool,
     agentPool,
     signer,
-    driver: new TickDriver(ops, wordProvider, env("STATE_DIR", "./state")),
+    driver: new TickDriver(ops, wordProvider, stateDir),
     ops,
     readSummary: makeTickSummaryReader(
       publicClient, settlement, abi, BigInt(env("FROM_BLOCK", "0"))),

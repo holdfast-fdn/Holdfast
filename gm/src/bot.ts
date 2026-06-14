@@ -65,6 +65,9 @@ export interface BotOpts {
   readWorld?: () => Promise<WorldView>;
   /** read a player's committable Flux (escrow), whole tokens */
   readEscrow?: (address: string) => Promise<number>;
+  /** testnet auto-faucet: grant a new player their starting escrow (owner
+   *  enroll). Idempotent on-chain (skips if already funded). */
+  autoEnroll?: (address: string) => Promise<void>;
 }
 
 const HELP = [
@@ -119,6 +122,7 @@ export class HoldfastBot {
   private readonly mapUrl?: (address?: string) => string;
   private readonly readWorld?: () => Promise<WorldView>;
   private readonly readEscrow?: (address: string) => Promise<number>;
+  private readonly autoEnroll?: (address: string) => Promise<void>;
 
   constructor(
     private readonly transport: TelegramTransport,
@@ -131,6 +135,18 @@ export class HoldfastBot {
     this.mapUrl = opts.mapUrl;
     this.readWorld = opts.readWorld;
     this.readEscrow = opts.readEscrow;
+    this.autoEnroll = opts.autoEnroll;
+  }
+
+  /** grant a player their starting escrow if they have none (best-effort,
+   *  idempotent on-chain). Never throws into the message flow. */
+  private async ensureEnrolled(address?: string): Promise<void> {
+    if (!this.autoEnroll || !address) return;
+    try {
+      await this.autoEnroll(address);
+    } catch (e) {
+      console.warn(`auto-enroll failed for ${address}:`, (e as Error).message);
+    }
   }
 
   /** the main menu keyboard, personalised with the player's map link */
@@ -166,6 +182,7 @@ export class HoldfastBot {
 
     if (text === "/start") {
       await this.welcome(msg.chatId, handle);
+      void this.ensureEnrolled(this.addrFor(handle)); // fund in background
       return;
     }
     if (text === "/help") {
@@ -200,6 +217,10 @@ export class HoldfastBot {
     }
 
     this.pool.add({ handle, display, intent: parsed });
+    console.log(
+      `[order] ${display} (${handle}) -> tile ${parsed.tileId} @ ${parsed.committed} Flux | pool=${this.pool.size()}`,
+    );
+    void this.ensureEnrolled(this.addrFor(handle)); // fund if they skipped /start
     await this.transport.send(
       msg.chatId,
       await this.orderConfirmation(parsed),
@@ -271,6 +292,7 @@ export class HoldfastBot {
       );
     }
     const addr = this.signer.wallet(handle).address;
+    await this.ensureEnrolled(addr); // grant starting Flux on first claim
     let balance = "";
     if (this.readEscrow && this.readWorld) {
       try {
