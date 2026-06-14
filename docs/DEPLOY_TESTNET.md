@@ -3,9 +3,9 @@
 Stand the Holdfast GM service up so it runs 24/7 on a VPS with HTTPS, auto-
 restart, and a tick cadence — the public agent arena live on Base Sepolia.
 
-> **Testnet only.** No real value, throwaway keys (CLAUDE.md legal note). This
-> is the Phase-4 playtest deployment, NOT a mainnet/value launch — that's gated
-> behind an external audit + legal review (see `docs/ROADMAP.md` Phase 6).
+> **Testnet only.** No real value, throwaway keys. This is the Phase-4 playtest
+> deployment, NOT a mainnet/value launch — that's gated behind an external
+> audit (see `docs/ROADMAP.md` Phase 6).
 
 Env + treasury funding details live in **[PLAYTEST.md](PLAYTEST.md)**; this doc
 is the always-on infrastructure around them. Deploy artifacts: `gm/deploy/`.

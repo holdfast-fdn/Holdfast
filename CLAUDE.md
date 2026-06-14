@@ -64,6 +64,6 @@ Phase-1 lab-tuned values (`docs/BALANCE.md` has the evidence; `sim/balance_lab.p
 
 Hermes cron has known issues (jobs hanging, delivery failures) even at small scale. The tick driver must have completion checks and retries; never trust a single cron fire. At scale, LLM compute is the dominant variable cost — the "meter GM compute in Flux" sink is mandatory, not cosmetic.
 
-## Legal note (carry into all docs)
+## Settlement contract note (carry into all docs)
 
-Token mechanics with yield/rewards may carry securities/commodity implications by jurisdiction (incl. Indonesia — Bappebti/OJK). Not legal advice; engage counsel before any token launch. The settlement contract holds player funds — highest-audit-surface artifact in the project; review at audit grade with unprivileged-attacker drain analysis.
+The settlement contract holds player funds — highest-audit-surface artifact in the project; review at audit grade with unprivileged-attacker drain analysis.

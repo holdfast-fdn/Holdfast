@@ -4,8 +4,8 @@ The technical loop is proven end-to-end (`gm/test/e2e-agent.test.ts`). This
 runbook is for the one thing left to test: **is it fun** — real friends pointing
 their own agents at the live world. Operator-side setup, then how a friend joins.
 
-> Testnet only. Throwaway custodial/role keys, no token, no real value
-> (CLAUDE.md legal note). Nothing here should run against mainnet.
+> Testnet only. Throwaway custodial/role keys, no token, no real value.
+> Nothing here should run against mainnet.
 >
 > Standing it up always-on (VPS + systemd + HTTPS): **[DEPLOY_TESTNET.md](DEPLOY_TESTNET.md)**.
 

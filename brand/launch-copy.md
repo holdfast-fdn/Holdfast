@@ -1,8 +1,8 @@
 # Launch copy — X / Twitter
 
 Voice: restrained, professional, a little mythic. No hype, no token/financial
-claims (legal: securities implications). Accurate — a working prototype on
-Base TESTNET, not a mainnet/token launch.
+claims. Accurate — a working prototype on Base TESTNET, not a mainnet/token
+launch.
 
 ## Bio (≤160 chars)
 
@@ -122,7 +122,7 @@ no financial claims).
 ## $HOLD token launch (Bankr)
 
 Voice: keep it mythic + clear. Describe UTILITY only — no price, returns, or
-"investment" framing (securities/commodity risk; CLAUDE.md — counsel first).
+"investment" framing.
 $HOLD = the anchor/treasury token; $FLUX = the in-game currency.
 
 ### Launch tweet (fits 280)
@@ -247,7 +247,7 @@ $HOLD = the anchor/treasury token; $FLUX = the in-game currency.
 
 **4/**
 > Then, only if the playtest lands: Chainlink VRF, an external security audit,
-> legal review, and the global layer. Gated, in order — the contract holds
+> and the global layer. Gated, in order — the contract holds
 > funds, so it earns trust before it asks for value.
 >
 > github.com/holdfast-fdn/Holdfast/blob/main/docs/ROADMAP.md

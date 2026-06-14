@@ -2,7 +2,7 @@
 
 *A persistent on-chain world with an autonomous AI Game Master, settled on Base.*
 
-Status: early draft, reflecting design decisions and simulation findings as of the initial design session. Not final; not legal or financial advice.
+Status: early draft, reflecting design decisions and simulation findings as of the initial design session. Not final.
 
 ---
 
@@ -59,7 +59,3 @@ The primary surface is a **Telegram/Discord bot** where players issue natural-la
 ## 9. Status and limitations
 
 The contest mathematics and a multi-tick world simulation are validated as pure, reproducible functions and produce emergent narrative even before any storytelling layer. Not built: the settlement contract and Flux token, the Hermes integration, clients, the indexer, and the dispute layer. The simulation uses scripted players; real-player dynamics — collusion, defensive exploits, cross-region economics — remain untested, as does Hermes reliability and cost at scale. These are the subject of the roadmap.
-
-## 10. Legal note
-
-Token mechanics involving yield or rewards may carry securities or commodity implications depending on jurisdiction, including Indonesia (Bappebti/OJK). This document is not legal advice; engage qualified counsel before any token launch.

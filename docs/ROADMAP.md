@@ -32,7 +32,7 @@ Reproduce the resolver on-chain. Highest-audit-surface artifact — write at aud
 - [x] Randomness architecture: commit-then-randomness flow (openTick batch commitment → fulfillWord by a separate provider, immutable → settleTick verifies the hash) kills post-word censorship and makes grinding publicly auditable (reopen counter). Remaining for value deployments: swap the testnet EOA provider for a Chainlink VRF v2.5 adapter written against current docs at deploy time (AUDIT.md M-2).
 - [x] Deployed to Base Sepolia 2026-06-12 (`docs/DEPLOYMENTS.md`): FluxToken `0xEf3c…d665`, HoldfastSettlement `0x68C2…Af49`; region 0 genesis = 9 wild isles, rev2 params; live companion verified against the public RPC.
 - [x] Settlement contract (`HoldfastSettlement.sol`): one tx per tick — emission (yield + regen minted) then contests resolved ON-CHAIN via ResolverLib with enforced batch ordering, afford checks, escrowed garrisons, bucket2Root committed per tick. Design note: at MVP scale full on-chain resolution replaces the planned Merkle reward distribution (strictly more trustless); Merkle claims become relevant at player counts where direct escrow updates are too costly.
-- [x] Testnet onboarding: `enroll()` — owner credits starting escrow (minted, publicly evented). Deliberately centralized for the Phase-4 closed playtest; MUST be replaced by a reviewed distribution + legal clearance before any value deployment.
+- [x] Testnet onboarding: `enroll()` — owner credits starting escrow (minted, publicly evented). Deliberately centralized for the Phase-4 closed playtest; MUST be replaced by a reviewed distribution before any value deployment.
 - [x] Settlement-level parity mirror (`sim/settlement_fixed.py` + vendored stdlib-only keccak256 verified against `cast keccak`): generated 6-tick war replay (`SettlementParity.t.sol`) asserts escrows + total supply after EVERY tick and the final tile map, bit-for-bit — full-tick semantics (emission, batch order, per-contest keccak words, wilds burn) now under the gate.
 - [x] **Parity test (the correctness gate), contest-math level:** `contracts/test/ResolverParity.t.sol` asserts `ResolverLib` reproduces `sim/resolver_fixed.py` (the integer spec, ≤2e-16 from the float reference) bit-for-bit over 87 fixtures + fuzz properties. α fixed at 0.5 → exact floor `sqrt`; fractional-α pow deferred deliberately. Extend the gate to full settlement when the contract lands.
 - [x] Self-audit (`docs/AUDIT.md`): drain analysis found and FIXED two real issues — operator intent forgery (now EIP-712-signed intents, censor-but-never-forge) and whole-tick grief via underfunded contests (now skip-with-event semantics, under the parity gate). Open/accepted: operator-chosen randomWord (M-2 — VRF mandatory before value), Bucket-2 modifier trust (bucket2Root), enroll faucet. External audit still gates Phase 6.
@@ -73,14 +73,13 @@ The real test. Everything before is preparation.
 - [ ] Multi-continent provisioning (continent = config, not rewrite).
 - [ ] Optional hierarchical GM (sub-GM per continent → Main GM narrative) if a single continent must host many players.
 - [ ] Dispute model decision (keep trusted-but-verifiable, or build optimistic + fraud proofs).
-- [ ] External security audit; legal review (incl. Indonesia / Bappebti / OJK); token launch design.
+- [ ] External security audit; token launch design.
 
-**Exit:** clean external audit, legal clarity, sustainable launch + scaling plan.
+**Exit:** clean external audit, sustainable launch + scaling plan.
 
 ## Anti-goals (do not do early)
 
 - Fraud proofs before the world is proven fun.
 - Multi-continent infra, the GM hierarchy, or the global layer before Phase 4.
 - 3D client / Godot or any heavy engine on the critical path (ADR-002).
-- Token launch before legal review.
 - Any architecture letting a GM (sub or main) decide outcomes — at any phase.

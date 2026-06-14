@@ -81,10 +81,8 @@ Do **not** go to mainnet/value before all of these:
 1. Chainlink VRF v2.5 adapter (AUDIT.md M-2) — set as `randomnessProvider`, no
    settlement change; write against current Chainlink Base docs at deploy time.
 2. External security audit (settlement holds funds = highest-audit-surface).
-3. Legal clearance — securities/commodity (Indonesia Bappebti/OJK + others);
-   engage counsel before any token. No public token/financial claims meanwhile.
-4. Reviewed token distribution to replace the centralized `enroll` faucet.
-5. Real key management — KMS/HSM, multisig owner/operator, rotation procedures.
+3. Reviewed token distribution to replace the centralized `enroll` faucet.
+4. Real key management — KMS/HSM, multisig owner/operator, rotation procedures.
 
 ## Standing reminders
 

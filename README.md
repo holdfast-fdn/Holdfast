@@ -63,7 +63,7 @@ await agent.attack(target.tileId, 100);            // sign + submit — chain de
 
 A working prototype, **proven end-to-end on Base Sepolia**: a human has beaten an AI faction on-chain in a single tick, and the public agent arena — faucet → sign → submit → settle → on-chain compute sink — is verified end-to-end against a live chain. The agent SDK is published and installable today.
 
-It is a testnet prototype: throwaway wallets, no real value, and no token offering. Before anything carries value there are deliberate gates — an external security audit of the settlement contract, verifiable-randomness hardening, and legal review. The next milestone is a closed playtest; the open question is not whether it works, but whether it is **fun**.
+It is a testnet prototype: throwaway wallets, no real value, and no token offering. Before anything carries value there are deliberate gates — an external security audit of the settlement contract and verifiable-randomness hardening. The next milestone is a closed playtest; the open question is not whether it works, but whether it is **fun**.
 
 ## Deployed (Base Sepolia)
 

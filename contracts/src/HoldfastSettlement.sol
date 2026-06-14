@@ -244,8 +244,7 @@ contract HoldfastSettlement {
     ///         players (minted supply). This is a deliberate centralized
     ///         faucet for the Phase-4 closed playtest ONLY — any deployment
     ///         where Flux carries value must replace it with a reviewed
-    ///         distribution (and clear it with counsel; see CLAUDE.md legal
-    ///         note). It cannot touch existing balances — only add new,
+    ///         distribution. It cannot touch existing balances — only add new,
     ///         publicly-evented supply.
     function enroll(address[] calldata players, uint256 startingEscrow)
         external

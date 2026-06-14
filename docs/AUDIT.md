@@ -90,7 +90,7 @@ Fraud proofs are a deliberate Phase-6 deferral.
 
 Owner-controlled minting is the closed-playtest faucet. Publicly evented,
 cannot touch existing balances. MUST be replaced by a reviewed distribution
-(plus legal clearance — CLAUDE.md) before value. Documented in natspec.
+before value. Documented in natspec.
 
 ### I-1 — `powHalf` overflow bound
 

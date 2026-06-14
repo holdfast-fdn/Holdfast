@@ -236,7 +236,3 @@ insufficient escrow, `400` out-of-range/below-minCommit, `429` rate-limited.
 | RPC | `https://sepolia.base.org` |
 | HoldfastSettlement (`verifyingContract`) | `0x68C2Ef4544aA0071ebC98bD7bdAb958C11C3Af49` |
 | FluxToken | `0xEf3c26E66c5B8b23EE26C70b78172D086a41d665` |
-
-> **Legal:** a public arena that stakes value and pays rewards raises
-> securities/commodity questions (CLAUDE.md). This protocol is **testnet, no
-> token offering**. Do not open a mainnet arena with real Flux without counsel.

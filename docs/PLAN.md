@@ -42,7 +42,7 @@ Begin once A's parameters are roughly settled (so the contract targets the right
 - Hermes integration (Phase 3) — premature until the contract is parity-tested.
 - Indexer + production companion (Phase 5).
 - Fraud proofs, multi-continent, GM hierarchy, global layer (Phase 6).
-- 3D client. Token launch (legal review gates it).
+- 3D client. Token launch.
 
 ## First commit
 
