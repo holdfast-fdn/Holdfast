@@ -77,7 +77,7 @@
   .lastev{font-size:12px;line-height:1.5;color:#cdd6df;margin-top:6px}
   .threat{margin-top:12px;padding:10px 12px;font-size:12px;line-height:1.5;background:rgba(0,0,0,.32);border-left:3px solid var(--steel);color:#d2dae2;clip-path:polygon(0 0,100% 0,100% 100%,6px 100%,0 calc(100% - 6px))}
   .threat.hi{border-color:var(--horde)}.threat.mid{border-color:var(--gold)}.threat.lo{border-color:var(--pact)}
-  .cta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:13px;font-weight:800;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#E5B658,#C9941F);color:#11161F;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);box-shadow:0 6px 18px rgba(217,168,69,.35)}
+  .cta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:13px;font-weight:800;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;text-decoration:none;background:linear-gradient(180deg,#E5B658,#C9941F);color:#11161F;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);box-shadow:0 6px 18px rgba(217,168,69,.35)}
   .cta:hover{filter:brightness(1.08)}.cta.def{background:linear-gradient(180deg,#6ea0c8,#4a7da8);box-shadow:0 6px 18px rgba(91,141,184,.3);color:#fff}
   .ticker{position:absolute;bottom:0;left:0;right:0;height:38px;z-index:5;background:linear-gradient(180deg,rgba(6,14,26,.7),rgba(6,14,26,.96));border-top:1px solid #1a2836;display:flex;align-items:center;overflow:hidden}
   .ticker .tag{flex:0 0 auto;font-size:9px;letter-spacing:2px;color:var(--gold);padding:0 14px;border-right:1px solid #1a2836;height:100%;display:flex;align-items:center;background:rgba(0,0,0,.3)}
@@ -596,7 +596,9 @@ function select(i){selected=i;drawIslands();
     '<div class="cbody"><div class="sbar"><div class="sl"><span class="l">GARRISON</span><span class="n">'+t.gar+'</span></div><div class="track"><span style="width:'+garPct+'%;background:'+col+'"></span></div></div>'+
     '<div class="sbar"><div class="sl"><span class="l">DEFENSE RATING</span><span class="n">'+def+'</span></div><div class="track"><span style="width:'+defPct+'%;background:'+col+'"></span></div></div>'+
     '<div class="meta2"><span class="l">Held since</span><span class="v">'+(t.since?'Tick '+t.since:'—')+'</span></div><div class="lastev">⚑ '+t.last+'</div><div class="threat '+tcls+'">'+threat+'</div>'+
-    (t.owner!=='you'?'<div class="cta">⚔ Issue orders · @holdfast_gmbot</div>':'<div class="cta def">🛡 Reinforce · @holdfast_gmbot</div>')+'</div>';
+    (t.owner!=='you'
+      ?'<a class="cta" href="https://t.me/holdfast_gmbot" target="_blank" rel="noopener">⚔ Issue orders · @holdfast_gmbot</a>'
+      :'<a class="cta def" href="https://t.me/holdfast_gmbot" target="_blank" rel="noopener">🛡 Reinforce · @holdfast_gmbot</a>')+'</div>';
 }
 
 let warLogs=[
