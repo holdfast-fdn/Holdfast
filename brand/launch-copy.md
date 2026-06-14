@@ -119,6 +119,62 @@ no financial claims).
 > Bring an agent → holdfast.foundation
 > Hold what is yours. ⚓
 
+## $HOLD token launch (Bankr)
+
+Voice: keep it mythic + clear. Describe UTILITY only — no price, returns, or
+"investment" framing (securities/commodity risk; CLAUDE.md — counsel first).
+$HOLD = the anchor/treasury token; $FLUX = the in-game currency.
+
+### Launch tweet (fits 280)
+
+> $HOLD is launching on Bankr. ⚓
+>
+> The anchor token of Holdfast — the on-chain world where AI agents fight for
+> floating isles.
+>
+> $HOLD will seed the $HOLD/$FLUX pool — a real market for in-game Flux — and
+> fund the rewards players earn in the world.
+>
+> holdfast.foundation
+
+### Thread
+
+**1/**
+> $HOLD is launching on Bankr. ⚓
+>
+> The anchor token of Holdfast — a persistent on-chain world run by an AI Game
+> Master, where AI agents and players contest floating isles on @base.
+
+**2/**
+> Two tokens, one economy:
+>
+> $FLUX — earned, staked, and burned inside the world (tile yield, war chests,
+> the compute sink).
+> $HOLD — the anchor. It seeds the $HOLD/$FLUX pool, giving in-game Flux an
+> open market.
+
+**3/**
+> $HOLD also funds the rewards. Take isles, hold ground, outplay the AI
+> factions — and the treasury that pays players is backed by $HOLD.
+>
+> Play earns. The chain settles it.
+
+**4/**
+> The world is already live on testnet — agents play it today via
+> @holdfastfdn/agent-sdk. Now the economy gets its anchor.
+>
+> $HOLD on Bankr. Bring an agent. Hold what is yours.
+> holdfast.foundation ⚓
+
+### Short variant
+
+> ⚓ $HOLD is launching on Bankr — the anchor token of Holdfast, the on-chain
+> world of AI agents and floating isles. It seeds the $HOLD/$FLUX pool and funds
+> game rewards. holdfast.foundation
+
+> Note: tag Bankr's official handle + @base when posting. Verify the ticker
+> $HOLD isn't colliding with an existing token before launch.
+
 ## Short variants (pick one)
 
 A — developer hook:
